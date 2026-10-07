@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
 	"ghtui/internal/config"
@@ -20,6 +21,7 @@ type deps struct {
 	sleep   func(ctx context.Context, d time.Duration) error
 	cfgPath string
 	apiURL  string
+	tuiOpts []tea.ProgramOption // test overrides for the TUI program
 }
 
 func defaultDeps() *deps {

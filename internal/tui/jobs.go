@@ -76,7 +76,9 @@ func (j *jobsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		}
 		owner, repo, _ := strings.Cut(j.run.RepoKey, "/")
 		ctx.Store.SetTailJob(owner, repo, job.ID)
-		return j, push(NewTail(owner, repo, job, step))
+		t := NewTail(owner, repo, job, step).(*tailScreen)
+		t.timestamps = ctx.ShowTimestamps
+		return j, push(t)
 	}
 	if j.stepsPane {
 		j.steps.navKey(k.String(), len(job.Steps), 10)

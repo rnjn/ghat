@@ -104,3 +104,12 @@ func TestJobsPopClearsFocus(t *testing.T) {
 		t.Fatal("focus not cleared")
 	}
 }
+
+func TestJobsTailInheritsShowTimestamps(t *testing.T) {
+	ctx, s := jobsCtx(t)
+	ctx.ShowTimestamps = true
+	_, cmd := s.Update(key("enter"), ctx)
+	if tl := pushed(t, cmd).(*tailScreen); !tl.timestamps {
+		t.Fatal("ui.show_timestamps not applied to Tail")
+	}
+}

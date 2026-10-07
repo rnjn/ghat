@@ -15,9 +15,10 @@ import (
 
 // Context is what screens may use: the store, poll refresh, and a clock.
 type Context struct {
-	Store   *store.Store
-	Refresh func(resource string)
-	Now     func() time.Time
+	Store          *store.Store
+	Refresh        func(resource string)
+	Now            func() time.Time
+	ShowTimestamps bool // initial timestamp toggle in Tail (ui.show_timestamps)
 }
 
 // Screen is one level of the screen stack.
