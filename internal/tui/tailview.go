@@ -30,6 +30,7 @@ type tailScreen struct {
 	timestamps bool
 	logErr     string
 	lastH      int
+	search     tailSearch
 }
 
 // NewTail opens job; step, when non-zero, is the step to scroll to.
@@ -53,6 +54,11 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			t.logErr = ""
 		}
 	case tea.KeyPressMsg:
+		lines := ctx.Store.Log(t.job.ID).Lines
+		t.ix.add(lines)
+		if used, cmd := t.searchKey(m, lines); used {
+			return t, cmd
+		}
 		if cmd := runKey(ctx, m.String(), t.job.RunID); cmd != nil {
 			return t, cmd
 		}
@@ -146,6 +152,7 @@ func (t *tailScreen) refresh(ctx *Context) []tail.LogLine {
 	}
 	lines := ctx.Store.Log(t.job.ID).Lines
 	t.ix.add(lines)
+	t.search.index(lines)
 	return lines
 }
 
@@ -201,7 +208,14 @@ func (t *tailScreen) View(ctx *Context, width, height int) string {
 	if t.follow {
 		mode = "following"
 	}
-	footer := styleDim.Render(fmt.Sprintf(" lines %d–%d of %d · %s", t.offset+1, end, len(vis), mode))
+	info := fmt.Sprintf(" lines %d–%d of %d · %s", t.offset+1, end, len(vis), mode)
+	if st := t.search.status(); st != "" {
+		info = " " + st + " ·" + info
+	}
+	footer := styleDim.Render(info)
+	if t.search.open {
+		footer = " " + t.search.status()
+	}
 	if t.job.Status != "completed" {
 		footer = t.spinnerFooter(now)
 	}
@@ -211,6 +225,17 @@ func (t *tailScreen) View(ctx *Context, width, height int) string {
 func (t *tailScreen) render(lines []tail.LogLine, i int) string {
 	l := lines[i]
 	text := sanitize(l.Text)
+	if hl, ok := t.search.highlight(text); ok {
+		prefix := kindPrefix(l.Kind)
+		if l.Kind == tail.Group && t.ix.folded[i] {
+			prefix = "▸ "
+		}
+		s := prefix + hl
+		if t.timestamps && !l.Timestamp.IsZero() {
+			s = styleDim.Render(l.Timestamp.Local().Format("15:04:05")) + " " + s
+		}
+		return s
+	}
 	var s string
 	switch l.Kind {
 	case tail.Group:
@@ -294,4 +319,19 @@ func sanitize(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// kindPrefix is the plain-text marker for a line kind.
+func kindPrefix(k tail.Kind) string {
+	switch k {
+	case tail.Group:
+		return "▾ "
+	case tail.Error:
+		return "error: "
+	case tail.Warning:
+		return "warning: "
+	case tail.Command:
+		return "$ "
+	}
+	return ""
 }

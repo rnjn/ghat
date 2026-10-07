@@ -177,6 +177,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "esc":
+		if h, ok := m.top().(escHandler); ok && h.HandleEsc() {
+			return m, nil
+		}
 		if len(m.stack) > 1 {
 			m.pop()
 		}

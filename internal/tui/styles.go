@@ -23,6 +23,7 @@ var (
 	styleStatus  = lipgloss.NewStyle().Reverse(true)
 	styleGroup   = lipgloss.NewStyle().Foreground(colorBlue).Bold(true)
 	styleCursor  = lipgloss.NewStyle().Reverse(true)
+	styleMatch   = lipgloss.NewStyle().Background(colorYellow).Foreground(lipgloss.Color("0"))
 )
 
 // glyph is a one-cell status symbol for a run, job or step.
