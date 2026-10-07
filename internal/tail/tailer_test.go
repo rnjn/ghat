@@ -131,3 +131,59 @@ func TestTailerDefaultSleepHonoursContext(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+var finalSteps = []gh.Step{
+	{Number: 1, Name: "Run make test", StartedAt: at("2026-10-07T04:28:23Z")},
+	{Number: 2, Name: "Complete job", StartedAt: at("2026-10-07T04:28:30Z")},
+}
+
+func doneWithSteps() gh.Job {
+	j := done("success")
+	j.Steps = finalSteps
+	return j
+}
+
+const (
+	earlyLine = "2026-10-07T04:28:23.5Z early\n"
+	lateLine  = "2026-10-07T04:28:30.2Z Cleaning up orphan processes\n"
+)
+
+func TestTailerRetriesFinalFetchUntilLogComplete(t *testing.T) {
+	src := &fakeSource{
+		jobs: []gh.Job{doneWithSteps()},
+		logs: []logResp{{body: earlyLine}, {body: earlyLine}, {body: earlyLine + lateLine}},
+	}
+	h := &harness{}
+	if _, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(h.got, ",") != "early,Cleaning up orphan processes" {
+		t.Fatalf("emitted %v", h.got)
+	}
+	if src.logCalls != 3 || h.sleeps != 2 {
+		t.Fatalf("log calls %d, sleeps %d; want 3, 2", src.logCalls, h.sleeps)
+	}
+}
+
+func TestTailerFinalFetchGivesUpAfterThreeRetries(t *testing.T) {
+	src := &fakeSource{jobs: []gh.Job{doneWithSteps()}, logs: []logResp{{err: gh.ErrLogNotReady}}}
+	h := &harness{}
+	job, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit)
+	if err != nil || job.Status != "completed" {
+		t.Fatalf("job=%+v err=%v", job, err)
+	}
+	if src.logCalls != 4 || h.sleeps != 3 {
+		t.Fatalf("log calls %d, sleeps %d; want 4, 3", src.logCalls, h.sleeps)
+	}
+}
+
+func TestTailerNoRetryWhenLogAlreadyComplete(t *testing.T) {
+	src := &fakeSource{jobs: []gh.Job{doneWithSteps()}, logs: []logResp{{body: earlyLine + lateLine}}}
+	h := &harness{}
+	if _, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit); err != nil {
+		t.Fatal(err)
+	}
+	if src.logCalls != 1 || h.sleeps != 0 {
+		t.Fatalf("log calls %d, sleeps %d; want 1, 0", src.logCalls, h.sleeps)
+	}
+}

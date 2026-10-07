@@ -49,16 +49,60 @@ func (t *Tailer) Run(ctx context.Context, emit func(LogLine)) (gh.Job, error) {
 		if err != nil {
 			return gh.Job{}, err
 		}
-		if _, err := t.poll(ctx, job, emit); err != nil {
+		lines, err := t.poll(ctx, job, emit)
+		if err != nil {
 			return job, err
 		}
 		if job.Status == "completed" {
-			return job, nil
+			return job, t.finish(ctx, job, lines, emit)
 		}
 		if err := t.opts.Sleep(ctx, t.opts.Interval); err != nil {
 			return job, err
 		}
 	}
+}
+
+// finalRetries is how many extra fetches a completed job gets while its log
+// lags the status flip.
+const finalRetries = 3
+
+// finish refetches a completed job's log until it holds the final step's
+// output, at most finalRetries times. Running out of retries is not an error.
+func (t *Tailer) finish(ctx context.Context, job gh.Job, lines []LogLine, emit func(LogLine)) error {
+	for i := 0; i < finalRetries && !logComplete(lines, job.Steps); i++ {
+		if err := t.opts.Sleep(ctx, t.opts.Interval); err != nil {
+			return err
+		}
+		var err error
+		if lines, err = t.poll(ctx, job, emit); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// logComplete reports whether a completed job's log includes output from
+// its last step: some line stamped at or after that step's start. Without
+// step times, any non-empty log counts as complete.
+func logComplete(lines []LogLine, steps []gh.Step) bool {
+	if len(lines) == 0 {
+		return false
+	}
+	var last time.Time
+	for _, s := range steps {
+		if !s.StartedAt.IsZero() {
+			last = s.StartedAt
+		}
+	}
+	if last.IsZero() {
+		return true
+	}
+	for i := len(lines) - 1; i >= 0; i-- {
+		if !lines[i].Timestamp.IsZero() && !lines[i].Timestamp.Before(last) {
+			return true
+		}
+	}
+	return false
 }
 
 // poll fetches the log once and emits lines past the emitted count. It
