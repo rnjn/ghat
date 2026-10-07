@@ -36,7 +36,9 @@ func exitCode(err error) int {
 	return 2
 }
 
-func newRootCmd() *cobra.Command {
+func newRootCmd() *cobra.Command { return newRootCmdWith(defaultDeps()) }
+
+func newRootCmdWith(d *deps) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "ghtui",
 		Short:         "Terminal UI and CLI for GitHub Actions",
@@ -45,5 +47,8 @@ func newRootCmd() *cobra.Command {
 		SilenceErrors: true,
 	}
 	cmd.SetVersionTemplate("ghtui {{.Version}}\n")
+	cmd.PersistentFlags().StringVar(&d.apiURL, "api-url", "", "GitHub API base URL")
+	_ = cmd.PersistentFlags().MarkHidden("api-url")
+	cmd.AddCommand(newListCmd(d))
 	return cmd
 }
