@@ -179,3 +179,39 @@ func TestTailSanitizesTabsAndControls(t *testing.T) {
 		t.Fatalf("view:\n%s", p)
 	}
 }
+
+func TestTailFollowsRerunAttempt(t *testing.T) {
+	ctx, s := tailCtx(t, 121, 0) // lint, completed
+	ctx.Store.SetLog(121, logLines(5), true)
+	_ = s.View(ctx, 80, 8)
+	ctx.Store.SetJobs(12, []gh.Job{
+		{ID: 130, RunID: 12, Name: "build", Status: "completed", Conclusion: "success"},
+		{ID: 131, RunID: 12, Name: "lint", Status: "in_progress", Steps: []gh.Step{{Number: 1, Name: "Set up job", Status: "in_progress", StartedAt: ago(time.Second)}}},
+	})
+	s, cmd := s.Update(poller.JobsUpdated{RunID: 12}, ctx)
+	if cmd == nil {
+		t.Fatal("no flash")
+	}
+	if res, _ := cmd().(ActionResult); res.Text != "following rerun attempt" {
+		t.Fatalf("flash %+v", res)
+	}
+	if _, _, id := ctx.Store.TailJob(); id != 131 {
+		t.Fatalf("tail job = %d, want 131", id)
+	}
+	v := plain(s.View(ctx, 80, 8))
+	if strings.Contains(v, "line 0") || !strings.Contains(v, "Set up job") {
+		t.Fatalf("still showing the old attempt:\n%s", v)
+	}
+}
+
+func TestTailKeepsJobWhenNoSameNamedJob(t *testing.T) {
+	ctx, s := tailCtx(t, 121, 0)
+	ctx.Store.SetJobs(12, []gh.Job{{ID: 130, RunID: 12, Name: "build", Status: "completed"}})
+	_, cmd := s.Update(poller.JobsUpdated{RunID: 12}, ctx)
+	if cmd != nil {
+		t.Fatal("switched without a same-named job")
+	}
+	if _, _, id := ctx.Store.TailJob(); id != 121 {
+		t.Fatalf("tail job = %d", id)
+	}
+}

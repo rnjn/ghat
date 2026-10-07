@@ -53,6 +53,10 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if m.JobID == t.job.ID {
 			t.logErr = ""
 		}
+	case poller.JobsUpdated:
+		if m.RunID == t.job.RunID && t.followRerun(ctx) {
+			return t, func() tea.Msg { return ActionResult{Text: "following rerun attempt"} }
+		}
 	case tea.KeyPressMsg:
 		lines := ctx.Store.Log(t.job.ID).Lines
 		t.ix.add(lines)
@@ -141,6 +145,27 @@ func (t *tailScreen) refold(lines []tail.LogLine, keep int) {
 	if keep >= 0 {
 		t.cur = t.ix.position(keep)
 	}
+}
+
+// followRerun switches to the same-named job of a new run attempt when the
+// open job has left its run's job list. It reports whether it switched.
+func (t *tailScreen) followRerun(ctx *Context) bool {
+	jobs := ctx.Store.Jobs(t.job.RunID)
+	for _, j := range jobs {
+		if j.ID == t.job.ID {
+			return false
+		}
+	}
+	for _, j := range jobs {
+		if j.Name == t.job.Name {
+			t.job = j
+			t.ix, t.search = newLogIndex(), tailSearch{}
+			t.cur, t.offset, t.follow, t.logErr = 0, 0, true, ""
+			ctx.Store.SetTailJob(t.owner, t.repo, j.ID)
+			return true
+		}
+	}
+	return false
 }
 
 // refresh picks up the latest job state and indexes new log lines.
