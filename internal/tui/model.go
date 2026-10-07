@@ -72,6 +72,13 @@ func NewModel(ctx Context, msgs <-chan any) Model {
 	return Model{ctx: &ctx, msgs: msgs, stack: []Screen{NewBoard()}, status: &statusBar{}}
 }
 
+// NewModelAt starts on the Runs screen for repoKey, with the Board below it.
+func NewModelAt(ctx Context, msgs <-chan any, repoKey string) Model {
+	m := NewModel(ctx, msgs)
+	m.stack = append(m.stack, NewRuns(repoKey))
+	return m
+}
+
 func waitFor(ch <-chan any) tea.Cmd {
 	return func() tea.Msg {
 		m, ok := <-ch

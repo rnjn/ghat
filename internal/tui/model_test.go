@@ -97,3 +97,16 @@ func TestModelTinyWindow(t *testing.T) {
 	m, _ = update(m, tea.WindowSizeMsg{Width: 0, Height: 0})
 	_ = m.View()
 }
+
+func TestNewModelAtOpensOnRuns(t *testing.T) {
+	ctx, _ := testContext(seedStore())
+	m := NewModelAt(*ctx, make(chan any), "acme/api")
+	m, _ = update(m, tea.WindowSizeMsg{Width: 100, Height: 10})
+	if m.top().Title() != "acme/api" || !strings.Contains(plain(m.View().Content), "feat/login") {
+		t.Fatalf("top %q", m.top().Title())
+	}
+	m, _ = update(m, key("esc"))
+	if m.top().Title() != "Board" {
+		t.Fatal("esc did not return to Board")
+	}
+}

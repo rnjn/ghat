@@ -150,3 +150,62 @@ func TestTUIStartsFromCacheAndSavesOnQuit(t *testing.T) {
 		t.Fatalf("cache not saved on quit (ok=%v savedAt=%v)", ok, snap.SavedAt)
 	}
 }
+
+func TestHereRejectsNonGitHubRemoteBeforeTUI(t *testing.T) {
+	for name, run := range map[string]func(string, ...string) ([]byte, error){
+		"no git": func(string, ...string) ([]byte, error) { return nil, io.EOF },
+		"gitlab": func(string, ...string) ([]byte, error) { return []byte("git@gitlab.com:o/r.git\n"), nil },
+	} {
+		d := testDeps()
+		d.run = run
+		d.tuiOpts = []tea.ProgramOption{tea.WithInput(strings.NewReader("")), tea.WithOutput(io.Discard)}
+		_, _, err := runCLI(t, d, nil, "--here")
+		if exitCode(err) != 2 || strings.Contains(err.Error(), "\n") {
+			t.Fatalf("%s: exit %d err %v", name, exitCode(err), err)
+		}
+	}
+}
+
+func TestHereEnsuresRepoIsPolled(t *testing.T) {
+	var mu sync.Mutex
+	seen := map[string]bool{}
+	srv := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		seen[r.URL.Path] = true
+		mu.Unlock()
+		switch r.URL.Path {
+		case "/user/repos":
+			_, _ = w.Write([]byte(`[]`)) // not recently pushed
+		case "/repos/acme/api":
+			_, _ = w.Write([]byte(`{"name":"api","owner":{"login":"acme"}}`))
+		default:
+			_, _ = w.Write([]byte(`{"total_count":0,"workflow_runs":[]}`))
+		}
+	})
+	d := testDeps()
+	pr, pw := io.Pipe()
+	d.tuiOpts = []tea.ProgramOption{tea.WithInput(pr), tea.WithOutput(io.Discard), tea.WithWindowSize(80, 20), tea.WithoutSignals()}
+	done := make(chan error, 1)
+	go func() { _, _, err := runCLI(t, d, srv, "--here"); done <- err }()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		mu.Lock()
+		ok := seen["/repos/acme/api/actions/runs"]
+		mu.Unlock()
+		if ok {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	go func() { _, _ = pw.Write([]byte("q")) }() // never block if the program already exited
+	err := <-done
+	_ = pr.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if !seen["/repos/acme/api/actions/runs"] {
+		t.Fatalf("--here repo never polled: %v", seen)
+	}
+}

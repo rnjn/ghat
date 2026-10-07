@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
@@ -18,7 +19,15 @@ import (
 
 // runTUI starts the poller and the Bubble Tea program, and stops both when
 // the program exits.
-func runTUI(cmd *cobra.Command, d *deps) error {
+func runTUI(cmd *cobra.Command, d *deps, here bool) error {
+	var hereKey string
+	if here {
+		owner, repo, err := d.repo("")
+		if err != nil {
+			return err
+		}
+		hereKey = owner + "/" + repo
+	}
 	c, err := d.client()
 	if err != nil {
 		return err
@@ -26,6 +35,11 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 	cfg, err := d.config()
 	if err != nil {
 		return err
+	}
+	if hereKey != "" && !slices.Contains(cfg.Repos.Pinned, hereKey) {
+		// Pinned for this session so it is polled even if not pushed lately.
+		cfg.Repos.Pinned = append(cfg.Repos.Pinned, hereKey)
+		cfg.Repos.Exclude = slices.DeleteFunc(cfg.Repos.Exclude, func(k string) bool { return k == hereKey })
 	}
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
@@ -54,10 +68,14 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 		p.Run(ctx)
 	}()
 
-	model := tui.NewModel(tui.Context{
+	tctx := tui.Context{
 		Store: st, Refresh: p.Refresh, Now: time.Now, ShowTimestamps: cfg.UI.ShowTimestamps,
 		Actions: actions.New(c), Open: opener(runtime.GOOS, d.run),
-	}, msgs)
+	}
+	model := tui.NewModel(tctx, msgs)
+	if hereKey != "" {
+		model = tui.NewModelAt(tctx, msgs, hereKey)
+	}
 	opts := append([]tea.ProgramOption{tea.WithContext(ctx)}, d.tuiOpts...)
 	_, err = tea.NewProgram(model, opts...).Run()
 	cancel()

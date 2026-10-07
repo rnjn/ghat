@@ -19,7 +19,8 @@ ghtui reads a token from `GH_TOKEN`, then `GITHUB_TOKEN`, then
 ## TUI
 
 ```sh
-ghtui
+ghtui          # board of your recent repos
+ghtui --here   # straight to the runs of the repo in the current directory
 ```
 
 Opens a board of every repo you pushed to in the last 14 days (plus
@@ -38,6 +39,9 @@ running count and failure count. Drill down Board → Runs → Jobs → Log.
 | `d` | dispatch a workflow: pick one with a `workflow_dispatch` trigger, fill the ref and inputs, confirm `y/N` |
 | `o` | open the current repo, run or job in the browser |
 | `R` | refresh the current screen now |
+| `/` | search the log (literal, case-insensitive); on Runs, filter by branch or status |
+| `n` `N` | next / previous search hit |
+| `z` `Z` | fold or unfold the group under the cursor / unfold all |
 | `t` | toggle timestamps (log) |
 | `G` | jump to the end of the log and follow it |
 | `?` | help |
@@ -51,7 +55,12 @@ While a job runs, the log screen shows its steps live; GitHub publishes the
 log when the job finishes, and it appears then. Polling stays well inside
 the API rate limit: runs every 15 s for repos with active runs and 60 s
 otherwise, jobs only for the run you are viewing or watching, and ETags so
-unchanged lists cost nothing. The status bar shows the remaining quota.
+unchanged lists cost nothing. The status bar shows the remaining quota;
+below 500 polling slows ×2, below 100 ×4.
+
+Repos, runs and ETags are cached in `~/.cache/ghtui/` (or
+`$XDG_CACHE_HOME/ghtui/`), so a restart shows the board at once. A broken
+cache is ignored.
 
 ## Commands
 
