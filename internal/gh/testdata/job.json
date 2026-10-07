@@ -1,0 +1,36 @@
+{
+  "id": 112631290209,
+  "run_id": 37571611570,
+  "name": "no-response / noResponse",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-10-07T04:28:23Z",
+  "completed_at": "2026-10-07T04:28:31Z",
+  "html_url": "https://github.com/cli/cli/actions/runs/37571611570/job/112631290209",
+  "steps": [
+    {
+      "number": 1,
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-07T04:28:23Z",
+      "completed_at": "2026-10-07T04:28:24Z"
+    },
+    {
+      "number": 2,
+      "name": "Run lee-dohm/no-response@9bb0a4b5e6a45046f00353d5de7d90fb8bd773bb",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-07T04:28:24Z",
+      "completed_at": "2026-10-07T04:28:29Z"
+    },
+    {
+      "number": 3,
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-07T04:28:29Z",
+      "completed_at": "2026-10-07T04:28:29Z"
+    }
+  ]
+}
