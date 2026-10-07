@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"ghtui/internal/gh"
 	"ghtui/internal/store"
@@ -79,6 +80,9 @@ type Dispatchable struct {
 	Inputs   []workflow.Input
 }
 
+// maxFetch bounds concurrent workflow-file requests.
+const maxFetch = 8
+
 // Dispatchable lists active workflows whose file at ref has a
 // workflow_dispatch trigger. Unreadable files are skipped; it fails only
 // if none could be read.
@@ -87,20 +91,41 @@ func (s *Service) Dispatchable(ctx context.Context, owner, repo, ref string) ([]
 	if err != nil {
 		return nil, err
 	}
-	var out []Dispatchable
-	var firstErr error
-	read := 0
-	for _, wf := range wfs {
+	type result struct {
+		file []byte
+		err  error
+	}
+	results := make([]result, len(wfs))
+	sem := make(chan struct{}, maxFetch)
+	var wg sync.WaitGroup
+	for i, wf := range wfs {
 		if wf.State != "active" {
 			continue
 		}
-		file, err := s.api.WorkflowFile(ctx, owner, repo, wf.Path, ref)
-		if err != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			file, err := s.api.WorkflowFile(ctx, owner, repo, wf.Path, ref)
+			results[i] = result{file: file, err: err}
+		}()
+	}
+	wg.Wait()
+
+	var out []Dispatchable
+	var firstErr error
+	read := 0
+	for i, wf := range wfs {
+		if wf.State != "active" {
+			continue
+		}
+		if err := results[i].err; err != nil {
 			firstErr = cmpErr(firstErr, err)
 			continue
 		}
 		read++
-		ok, inputs, err := workflow.ParseDispatch(file)
+		ok, inputs, err := workflow.ParseDispatch(results[i].file)
 		if err != nil || !ok {
 			continue
 		}

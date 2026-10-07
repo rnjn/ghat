@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
+	"ghtui/internal/actions"
 	"ghtui/internal/poller"
 	"ghtui/internal/store"
 	"ghtui/internal/tui"
@@ -43,7 +45,10 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 		p.Run(ctx)
 	}()
 
-	model := tui.NewModel(tui.Context{Store: st, Refresh: p.Refresh, Now: time.Now, ShowTimestamps: cfg.UI.ShowTimestamps}, msgs)
+	model := tui.NewModel(tui.Context{
+		Store: st, Refresh: p.Refresh, Now: time.Now, ShowTimestamps: cfg.UI.ShowTimestamps,
+		Actions: actions.New(c), Open: opener(runtime.GOOS, d.run),
+	}, msgs)
 	opts := append([]tea.ProgramOption{tea.WithContext(ctx)}, d.tuiOpts...)
 	_, err = tea.NewProgram(model, opts...).Run()
 	cancel()
@@ -54,4 +59,16 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 		return nil
 	}
 	return err
+}
+
+// opener returns a function that opens a URL in the default browser.
+func opener(goos string, run func(name string, args ...string) ([]byte, error)) func(string) error {
+	name := "xdg-open"
+	if goos == "darwin" {
+		name = "open"
+	}
+	return func(url string) error {
+		_, err := run(name, url)
+		return err
+	}
 }

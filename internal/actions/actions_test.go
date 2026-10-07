@@ -5,13 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"ghtui/internal/gh"
 	"ghtui/internal/workflow"
 )
 
 type fakeAPI struct {
+	fmu       sync.Mutex
 	calls     []string
 	jobs      []gh.Job
 	workflows []gh.Workflow
@@ -45,6 +48,8 @@ func (f *fakeAPI) ListWorkflows(_ context.Context, o, r string) ([]gh.Workflow, 
 	return f.workflows, nil
 }
 func (f *fakeAPI) WorkflowFile(_ context.Context, o, r, path, ref string) ([]byte, error) {
+	f.fmu.Lock()
+	defer f.fmu.Unlock()
 	f.calls = append(f.calls, "file "+path+"@"+ref)
 	if err := f.fileErr[path]; err != nil {
 		return nil, err
@@ -162,5 +167,48 @@ func TestDispatchSendsValues(t *testing.T) {
 	}
 	if _, err := New(api).Dispatch(context.Background(), "o", "r", gh.Workflow{ID: 7}, " ", nil, nil); err == nil {
 		t.Fatal("empty ref not rejected")
+	}
+}
+
+// slowFiles answers WorkflowFile after a delay; safe for concurrent calls.
+type slowFiles struct {
+	fakeAPI
+	mu       sync.Mutex
+	inFlight int
+	peak     int
+}
+
+func (s *slowFiles) WorkflowFile(_ context.Context, o, r, path, ref string) ([]byte, error) {
+	s.mu.Lock()
+	s.inFlight++
+	s.peak = max(s.peak, s.inFlight)
+	s.mu.Unlock()
+	time.Sleep(30 * time.Millisecond)
+	s.mu.Lock()
+	s.inFlight--
+	s.mu.Unlock()
+	return []byte("on: workflow_dispatch\n"), nil
+}
+
+func TestDispatchableFetchesFilesConcurrentlyInOrder(t *testing.T) {
+	api := &slowFiles{}
+	for i := 1; i <= 24; i++ {
+		api.workflows = append(api.workflows, gh.Workflow{ID: int64(i), Name: fmt.Sprintf("wf%02d", i), Path: fmt.Sprintf("%02d.yml", i), State: "active"})
+	}
+	start := time.Now()
+	got, err := New(api).Dispatchable(context.Background(), "o", "r", "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d := time.Since(start); d > 300*time.Millisecond {
+		t.Fatalf("took %v for 24 files (sequential would be ~720ms)", d)
+	}
+	if api.peak > maxFetch {
+		t.Fatalf("peak concurrency %d, limit %d", api.peak, maxFetch)
+	}
+	for i, d := range got {
+		if d.Workflow.ID != int64(i+1) {
+			t.Fatalf("order broken at %d: %v", i, d.Workflow.Name)
+		}
 	}
 }

@@ -33,11 +33,19 @@ running count and failure count. Drill down Board → Runs → Jobs → Log.
 | `esc` | back |
 | `tab` `←` `→` | switch between jobs and steps (Jobs screen) |
 | `w` | watch a run: bell and status-bar flash when it finishes |
+| `r` | rerun the run: only failed jobs if any failed, else all (asks `y/N`) |
+| `x` | cancel the run (asks `y/N`) |
+| `d` | dispatch a workflow: pick one with a `workflow_dispatch` trigger, fill the ref and inputs, confirm `y/N` |
+| `o` | open the current repo, run or job in the browser |
 | `R` | refresh the current screen now |
 | `t` | toggle timestamps (log) |
 | `G` | jump to the end of the log and follow it |
 | `?` | help |
 | `q` | quit |
+
+Actions are fire-and-forget: the status bar says "… requested" and the
+next poll shows what GitHub did. They need a token with write access to the
+repository and the `workflow` scope (`gh auth refresh -s workflow`).
 
 While a job runs, the log screen shows its steps live; GitHub publishes the
 log when the job finishes, and it appears then. Polling stays well inside

@@ -71,3 +71,16 @@ func TestTUIWithoutTokenExits2BeforeStarting(t *testing.T) {
 		t.Fatalf("exit %d err %v", exitCode(err), err)
 	}
 }
+
+func TestOpenerPerOS(t *testing.T) {
+	for goos, want := range map[string]string{"darwin": "open https://x", "linux": "xdg-open https://x", "freebsd": "xdg-open https://x"} {
+		var got string
+		open := opener(goos, func(name string, args ...string) ([]byte, error) {
+			got = name + " " + strings.Join(args, " ")
+			return nil, nil
+		})
+		if err := open("https://x"); err != nil || got != want {
+			t.Errorf("%s: ran %q err %v, want %q", goos, got, err, want)
+		}
+	}
+}
