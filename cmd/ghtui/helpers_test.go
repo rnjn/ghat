@@ -28,7 +28,8 @@ func testDeps() *deps {
 			}
 			return nil, errors.New("unexpected command " + name)
 		},
-		now: func() time.Time { return testNow },
+		now:     func() time.Time { return testNow },
+		cfgPath: "/nonexistent/ghtui/config.yaml",
 	}
 	d.sleep = func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
 	return d

@@ -6,17 +6,20 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"ghtui/internal/config"
 	"ghtui/internal/gh"
 )
 
 // deps are the process-level effects commands use, injected for tests.
 type deps struct {
-	env    func(string) string
-	run    func(name string, args ...string) ([]byte, error)
-	now    func() time.Time
-	sleep  func(ctx context.Context, d time.Duration) error
-	apiURL string
+	env     func(string) string
+	run     func(name string, args ...string) ([]byte, error)
+	now     func() time.Time
+	sleep   func(ctx context.Context, d time.Duration) error
+	cfgPath string
+	apiURL  string
 }
 
 func defaultDeps() *deps {
@@ -25,7 +28,8 @@ func defaultDeps() *deps {
 		run: func(name string, args ...string) ([]byte, error) {
 			return exec.Command(name, args...).Output()
 		},
-		now: time.Now,
+		now:     time.Now,
+		cfgPath: config.DefaultPath(),
 	}
 }
 
@@ -49,4 +53,13 @@ func (d *deps) repo(arg string) (owner, repo string, err error) {
 		return config.ParseRepo(arg)
 	}
 	return config.CurrentRepo(d.run)
+}
+
+// config loads the user's config file.
+func (d *deps) config() (config.Config, error) {
+	return config.Load(d.cfgPath)
+}
+
+func addRepoFlag(cmd *cobra.Command, dst *string) {
+	cmd.Flags().StringVar(dst, "repo", "", "repository as owner/repo (default: inferred from git remote)")
 }
