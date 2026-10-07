@@ -1,0 +1,5 @@
+  STATUS         W  WORKFLOW  BRANCH      EVENT         ACTOR  DURATION  RUN
+› ● in_progress  w  CI        feat/login  pull_request  alice  3m0s      #41
+  ✓ success         Deploy    main        push          alice  10m0s     #40
+  ✗ failure         CI        main        push          carol  10m0s     #39
+

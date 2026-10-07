@@ -45,6 +45,33 @@ func glyph(status, conclusion string) string {
 	return styleDim.Render("?")
 }
 
+// state is the conclusion of a finished item, else its status.
+func state(status, conclusion string) string {
+	if status == "completed" && conclusion != "" {
+		return conclusion
+	}
+	return status
+}
+
+// fmtDur renders a duration to the second, e.g. 1m30s.
+func fmtDur(d time.Duration) string {
+	if d < 0 {
+		d = 0
+	}
+	return d.Truncate(time.Second).String()
+}
+
+// span is the duration from start to end, or to now when end is zero.
+func span(start, end, now time.Time) time.Duration {
+	if start.IsZero() {
+		return 0
+	}
+	if end.IsZero() || end.Before(start) {
+		end = now
+	}
+	return end.Sub(start)
+}
+
 func isFailure(conclusion string) bool {
 	return conclusion == "failure" || conclusion == "timed_out" || conclusion == "startup_failure"
 }
