@@ -161,3 +161,21 @@ func TestTailResizeKeepsScrollValid(t *testing.T) {
 	assertFits(t, s.View(ctx, 40, 10), 40)
 	_ = s.View(ctx, 0, 0)
 }
+
+func TestTailSanitizesTabsAndControls(t *testing.T) {
+	ctx, s := tailCtx(t, 121, 0)
+	ctx.Store.SetLog(121, []tail.LogLine{
+		{Text: "ok  \tghtui/internal/gh\t0.5s\t" + strings.Repeat("x", 30)},
+		{Text: "progress 10%\rprogress 100%"},
+		{Text: "\x1b[2Jcleared\x1b[1;1H"},
+	}, true)
+	v := s.View(ctx, 40, 5)
+	assertFits(t, v, 40)
+	p := plain(v)
+	if strings.ContainsAny(p, "\t\r\x1b") {
+		t.Fatalf("control characters reached the screen: %q", p)
+	}
+	if !strings.Contains(p, "progress 100%") || strings.Contains(p, "progress 10%") || !strings.Contains(p, "cleared") {
+		t.Fatalf("view:\n%s", p)
+	}
+}

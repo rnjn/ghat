@@ -2,8 +2,13 @@ package tui
 
 import (
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/x/exp/golden"
+
+	"ghtui/internal/gh"
+	"ghtui/internal/poller"
+	"ghtui/internal/store"
 )
 
 func TestBoardGolden(t *testing.T) {
@@ -49,4 +54,20 @@ func TestBoardTinyAndZeroSizes(t *testing.T) {
 	assertFits(t, b.View(ctx, 40, 10), 40)
 	_ = b.View(ctx, 0, 0)
 	_ = b.View(ctx, 3, 1)
+}
+
+func TestBoardKeepsSelectedRepoWhenOrderChanges(t *testing.T) {
+	ctx, _ := testContext(seedStore())
+	s := NewBoard()
+	s, _ = s.Update(key("j"), ctx) // acme/web
+	_ = s.View(ctx, 100, 8)
+	// a run starts on me/dots... make acme/web idle-sorted below a newly active repo
+	ctx.Store.SetRepos(append(ctx.Store.Repos(), store.RepoState{Repo: gh.Repo{Owner: "z", Name: "new", PushedAt: ago(5 * time.Hour)}}))
+	ctx.Store.SetRuns("z/new", []gh.Run{{ID: 99, RepoKey: "z/new", Status: "in_progress", CreatedAt: ago(time.Second)}}, "")
+	s, _ = s.Update(poller.RunsUpdated{RepoKey: "z/new"}, ctx)
+	_ = s.View(ctx, 100, 8)
+	_, cmd := s.Update(key("enter"), ctx)
+	if got := pushed(t, cmd).Title(); got != "acme/web" {
+		t.Fatalf("enter opened %q, want acme/web", got)
+	}
 }

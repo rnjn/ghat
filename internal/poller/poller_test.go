@@ -124,8 +124,14 @@ func TestRunsETagNotModifiedSendsNothing(t *testing.T) {
 	if calls := h.api.takeCalls(); len(calls) != 1 || calls[0] != `ListRuns a/x etag="e1"` {
 		t.Fatalf("calls = %v", calls)
 	}
-	if msgs := h.takeMsgs(); len(msgs) != 0 {
-		t.Fatalf("msgs on 304 = %#v", msgs)
+	msgs := h.takeMsgs()
+	for _, m := range msgs {
+		if _, ok := m.(RunsUpdated); ok {
+			t.Fatalf("RunsUpdated on 304: %#v", msgs)
+		}
+	}
+	if !hasMsg(msgs, Polled{}) {
+		t.Fatalf("no Polled on 304: %#v", msgs)
 	}
 }
 
@@ -171,7 +177,9 @@ func TestRefreshMakesResourceDueNow(t *testing.T) {
 func withoutRate(msgs []any) []any {
 	var out []any
 	for _, m := range msgs {
-		if _, ok := m.(RateLimit); !ok {
+		_, rate := m.(RateLimit)
+		_, polled := m.(Polled)
+		if !rate && !polled {
 			out = append(out, m)
 		}
 	}

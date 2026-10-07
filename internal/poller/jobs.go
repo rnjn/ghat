@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"ghtui/internal/store"
 )
 
 // syncInterest schedules jobs polls for the focused and watched runs and a
@@ -30,7 +32,8 @@ func (p *Poller) syncInterest() {
 		p.sched.removePrefix(prefix, func(k string) bool { return want[k] })
 	}
 	for k := range p.jobsDone {
-		if !want[k] {
+		// A rerun keeps the run ID; poll its jobs again once it is active.
+		if r, ok := p.st.Run(keyID(k)); !want[k] || (ok && store.IsActive(r.Status)) {
 			delete(p.jobsDone, k)
 		}
 	}

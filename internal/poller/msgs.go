@@ -11,6 +11,10 @@ import (
 // ReposUpdated means the discovered repo set changed.
 type ReposUpdated struct{}
 
+// Polled means a poll succeeded, changed or not (304); it keeps the
+// status bar's "last poll" age honest.
+type Polled struct{}
+
 // RunsUpdated means a repo's runs changed.
 type RunsUpdated struct{ RepoKey string }
 

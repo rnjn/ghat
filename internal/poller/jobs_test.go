@@ -92,3 +92,16 @@ func hasMsg(msgs []any, want any) bool {
 	}
 	return false
 }
+
+func TestRerunOfCompletedRunPollsJobsAgain(t *testing.T) {
+	h := started(t, "completed")
+	h.st.SetFocusRun(1)
+	h.tickAt(time.Second)
+	h.api.takeCalls()
+	h.api.runs["a/x"] = []gh.Run{ghRun(1, "a/x", "in_progress", ""), ghRun(2, "a/x", "in_progress", "")}
+	h.tickAt(60 * time.Second) // runs poll sees the rerun
+	h.tickAt(61 * time.Second)
+	if n := countCalls(h.api.takeCalls(), "ListJobs 1"); n != 1 {
+		t.Fatalf("ListJobs after rerun = %d, want 1", n)
+	}
+}

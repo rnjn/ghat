@@ -38,3 +38,11 @@ func TestStatusBarTruncates(t *testing.T) {
 	assertFits(t, sb.view("Board", 40, testNow), 40)
 	assertFits(t, sb.view("Board", 0, testNow), 0)
 }
+
+func TestStatusBarPolledAdvancesAge(t *testing.T) {
+	var sb statusBar
+	sb.observe(poller.Polled{}, ago(2*time.Second))
+	if got := plain(sb.view("Board", 120, testNow)); !strings.Contains(got, "polled 2s ago") {
+		t.Fatalf("status bar = %q", got)
+	}
+}

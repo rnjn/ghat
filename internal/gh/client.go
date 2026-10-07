@@ -159,6 +159,15 @@ func checkStatus(res *http.Response, resp Response) error {
 	}
 	data, _ := io.ReadAll(io.LimitReader(res.Body, 64<<10))
 	_ = json.Unmarshal(data, &body)
+	if res.StatusCode == http.StatusForbidden || res.StatusCode == http.StatusTooManyRequests {
+		// Secondary (abuse) limits leave the primary quota intact.
+		if secs, err := strconv.Atoi(res.Header.Get("Retry-After")); err == nil {
+			return &RateLimitError{Reset: time.Now().Add(time.Duration(secs) * time.Second)}
+		}
+		if strings.Contains(strings.ToLower(body.Message), "secondary rate limit") {
+			return &RateLimitError{Reset: time.Now().Add(time.Minute)}
+		}
+	}
 	return &APIError{Status: res.StatusCode, Message: body.Message}
 }
 

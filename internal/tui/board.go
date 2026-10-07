@@ -11,7 +11,26 @@ import (
 
 // board lists every discovered repo with its latest run.
 type board struct {
-	cur cursor
+	cur    cursor
+	selKey string
+}
+
+// sync re-finds the selected repo by key after the order changed.
+func (b *board) sync(repos []store.RepoState) {
+	for i, r := range repos {
+		if r.Repo.Key() == b.selKey {
+			b.cur.pos = i
+			return
+		}
+	}
+	b.cur.clamp(len(repos))
+	b.remember(repos)
+}
+
+func (b *board) remember(repos []store.RepoState) {
+	if len(repos) > 0 {
+		b.selKey = repos[b.cur.pos].Repo.Key()
+	}
 }
 
 // NewBoard returns the top-level repo screen.
@@ -25,7 +44,9 @@ func (b *board) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return b, nil
 	}
 	repos := ctx.Store.Repos()
+	b.sync(repos)
 	if b.cur.navKey(k.String(), len(repos), 10) {
+		b.remember(repos)
 		return b, nil
 	}
 	if k.String() == "enter" && len(repos) > 0 {
@@ -40,6 +61,7 @@ func (b *board) View(ctx *Context, width, height int) string {
 	if len(repos) == 0 {
 		return fit([]string{"", "  discovering repos…"}, width, height)
 	}
+	b.sync(repos)
 	now := ctx.Now()
 	start, end := b.cur.window(len(repos), height-1)
 	var rows [][]string

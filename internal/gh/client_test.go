@@ -207,3 +207,32 @@ func TestRateLimitConcurrent(t *testing.T) {
 		<-done
 	}
 }
+
+func TestSecondaryRateLimitIsRateLimitError(t *testing.T) {
+	for name, h := range map[string]http.HandlerFunc{
+		"retry-after": func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-RateLimit-Remaining", "4000")
+			w.Header().Set("Retry-After", "30")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"message":"You have exceeded a secondary rate limit."}`))
+		},
+		"message only": func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-RateLimit-Remaining", "4000")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"message":"You have exceeded a secondary rate limit."}`))
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := newTestClient(t, h)
+			before := time.Now()
+			_, err := c.get(context.Background(), "/x", "", nil)
+			var rl *RateLimitError
+			if !errors.As(err, &rl) {
+				t.Fatalf("err = %T %v, want *RateLimitError", err, err)
+			}
+			if !rl.Reset.After(before.Add(20 * time.Second)) {
+				t.Fatalf("Reset = %v, want at least ~30s ahead", rl.Reset)
+			}
+		})
+	}
+}

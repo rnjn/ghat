@@ -32,7 +32,7 @@ func (s *statusBar) observe(msg any, at time.Time) {
 		s.rate, s.haveRate = m, true
 	case poller.PollerError:
 		s.lastErr, s.errAt = fmt.Sprintf("%s: %v", m.Resource, m.Err), at
-	case poller.ReposUpdated, poller.RunsUpdated, poller.JobsUpdated, poller.LogAppended, poller.LogComplete:
+	case poller.Polled, poller.ReposUpdated, poller.RunsUpdated, poller.JobsUpdated, poller.LogAppended, poller.LogComplete:
 		s.lastPoll = at
 	}
 }

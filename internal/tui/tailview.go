@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"ghtui/internal/gh"
 	"ghtui/internal/poller"
@@ -149,18 +150,19 @@ func (t *tailScreen) View(ctx *Context, width, height int) string {
 }
 
 func (t *tailScreen) render(l tail.LogLine) string {
+	text := sanitize(l.Text)
 	var s string
 	switch l.Kind {
 	case tail.Group:
-		s = styleGroup.Render("▸ " + l.Text)
+		s = styleGroup.Render("▸ " + text)
 	case tail.Error:
-		s = styleError.Render("error: " + l.Text)
+		s = styleError.Render("error: " + text)
 	case tail.Warning:
-		s = styleWarning.Render("warning: " + l.Text)
+		s = styleWarning.Render("warning: " + text)
 	case tail.Command:
-		s = styleDim.Render("$ " + l.Text)
+		s = styleDim.Render("$ " + text)
 	default:
-		s = l.Text
+		s = text
 	}
 	if t.timestamps && !l.Timestamp.IsZero() {
 		s = styleDim.Render(l.Timestamp.Local().Format("15:04:05")) + " " + s
@@ -204,3 +206,28 @@ func (t *tailScreen) spinnerFooter(now time.Time) string {
 
 // Resource is what R re-polls.
 func (t *tailScreen) Resource() string { return fmt.Sprintf("log:%d", t.job.ID) }
+
+// sanitize makes raw log text safe to lay out: escape sequences removed,
+// carriage-return overwrites resolved to the final text, tabs expanded to
+// 8-column stops, and remaining control characters dropped.
+func sanitize(s string) string {
+	s = ansi.Strip(s)
+	if i := strings.LastIndexByte(s, '\r'); i >= 0 {
+		s = s[i+1:]
+	}
+	var b strings.Builder
+	col := 0
+	for _, r := range s {
+		switch {
+		case r == '\t':
+			n := 8 - col%8
+			b.WriteString(strings.Repeat(" ", n))
+			col += n
+		case r < 0x20 || r == 0x7f:
+		default:
+			b.WriteRune(r)
+			col += ansi.StringWidth(string(r))
+		}
+	}
+	return b.String()
+}

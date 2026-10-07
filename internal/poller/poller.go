@@ -204,6 +204,7 @@ func (p *Poller) pollRuns(ctx context.Context, now time.Time, repoKey string) {
 		return
 	}
 	p.succeeded(key)
+	p.send(Polled{})
 	if !resp.NotModified {
 		completed := p.st.SetRuns(repoKey, runs, resp.ETag)
 		p.send(RunsUpdated{RepoKey: repoKey})
