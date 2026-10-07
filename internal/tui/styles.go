@@ -21,6 +21,7 @@ var (
 	styleError   = lipgloss.NewStyle().Foreground(colorRed)
 	styleWarning = lipgloss.NewStyle().Foreground(colorYellow)
 	styleStatus  = lipgloss.NewStyle().Reverse(true)
+	styleTitle   = lipgloss.NewStyle().Bold(true).Reverse(true)
 	styleGroup   = lipgloss.NewStyle().Foreground(colorBlue).Bold(true)
 	styleCursor  = lipgloss.NewStyle().Reverse(true)
 	styleMatch   = lipgloss.NewStyle().Background(colorYellow).Foreground(lipgloss.Color("0"))
@@ -108,8 +109,6 @@ func fit(lines []string, width, height int) string {
 	}
 	return strings.Join(out, "\n")
 }
-
-func stripForWidth(s string) string { return ansi.Strip(s) }
 
 func truncate(s string, width int) string {
 	if width <= 0 {

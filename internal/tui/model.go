@@ -220,8 +220,13 @@ func (m Model) View() tea.View {
 	if m.width <= 0 || m.height <= 0 {
 		return v
 	}
-	bodyH := m.height - 1
-	body := ""
+	head := m.header()
+	if m.height <= len(head) {
+		v.Content = strings.Join(head[:m.height], "\n")
+		return v
+	}
+	bodyH := m.height - len(head) - 1
+	var body string
 	if m.authErr != nil {
 		body = fit([]string{"", "  GitHub rejected the token. Run `gh auth login`, then restart ghtui.", "", "  " + m.authErr.Error(), "", "  q quit"}, m.width, bodyH)
 	} else if m.help {
@@ -229,11 +234,11 @@ func (m Model) View() tea.View {
 	} else {
 		body = fit(strings.Split(m.top().View(m.ctx, m.width, bodyH), "\n"), m.width, bodyH)
 	}
-	bar := m.status.view(m.top().Title(), m.width, m.ctx.Now())
-	if bodyH <= 0 {
-		v.Content = bar
-	} else {
-		v.Content = body + "\n" + bar
+	bar := m.status.view(m.width, m.ctx.Now())
+	parts := append(head, bar)
+	if bodyH > 0 {
+		parts = append(head, body, bar)
 	}
+	v.Content = strings.Join(parts, "\n")
 	return v
 }

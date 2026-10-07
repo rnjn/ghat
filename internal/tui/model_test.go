@@ -26,7 +26,7 @@ func update(m Model, msg tea.Msg) (Model, tea.Cmd) {
 func TestModelStartsOnBoardAndRendersStatusBar(t *testing.T) {
 	m, _ := newTestModel(t)
 	v := plain(m.View().Content)
-	if !strings.Contains(v, "acme/api") || !strings.Contains(v, "Board") {
+	if !strings.Contains(v, "acme/api") || !strings.Contains(v, "ghtui ▸ Repositories") {
 		t.Fatalf("view:\n%s", v)
 	}
 	if !m.View().AltScreen {
