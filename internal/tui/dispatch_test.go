@@ -7,9 +7,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/actions"
-	"ghtui/internal/gh"
-	"ghtui/internal/workflow"
+	"github.com/rnjn/ghtui/internal/actions"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/workflow"
 )
 
 func sampleDispatchable() []actions.Dispatchable {

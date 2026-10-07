@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 const fullLog = "2026-10-07T04:28:23.1Z ##[group]Run make\n2026-10-07T04:28:24.2Z ok\n"

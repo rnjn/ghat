@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 // syncInterest schedules jobs polls for the focused and watched runs and a

@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/store"
-	"ghtui/internal/workflow"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/workflow"
 )
 
 // API is the subset of *gh.Client the actions need.

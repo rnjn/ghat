@@ -9,9 +9,9 @@ import (
 
 	"github.com/charmbracelet/x/exp/golden"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/poller"
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 func tailCtx(t *testing.T, jobID int64, step int) (*Context, Screen) {

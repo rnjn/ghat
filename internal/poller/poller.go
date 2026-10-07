@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"ghtui/internal/config"
-	"ghtui/internal/gh"
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/config"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 // API is the subset of *gh.Client the poller uses.

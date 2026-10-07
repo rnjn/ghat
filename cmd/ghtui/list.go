@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 func newListCmd(d *deps) *cobra.Command {

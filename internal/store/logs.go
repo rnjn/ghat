@@ -3,7 +3,7 @@ package store
 import (
 	"slices"
 
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 // maxLogs bounds how many job logs are kept in memory.

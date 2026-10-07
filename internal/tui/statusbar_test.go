@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/poller"
 )
 
 func TestStatusBarShowsTitleQuotaAgeAndError(t *testing.T) {

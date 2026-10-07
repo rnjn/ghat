@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 func TestLowRateLimitDoublesIntervals(t *testing.T) {

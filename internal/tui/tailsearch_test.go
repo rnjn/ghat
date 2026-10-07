@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 func searchLog() []tail.LogLine {

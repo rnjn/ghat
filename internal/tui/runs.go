@@ -8,7 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 // runsScreen lists one repo's runs, newest first.

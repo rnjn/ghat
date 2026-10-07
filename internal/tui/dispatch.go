@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/actions"
+	"github.com/rnjn/ghtui/internal/actions"
 )
 
 // dispatchLoaded carries the dispatchable workflows of a repo.

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 // started returns a harness with one repo whose run 1 has the given status,

@@ -9,9 +9,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/poller"
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 var spinnerFrames = []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")

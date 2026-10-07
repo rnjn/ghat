@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/config"
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/config"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 func TestFirstTickDiscoversThenPollsEveryRepo(t *testing.T) {

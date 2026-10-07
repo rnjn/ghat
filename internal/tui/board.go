@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 // board lists every discovered repo with its latest run.

@@ -7,8 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/poller"
 )
 
 func filterRuns(s Screen, ctx *Context, text string) Screen {

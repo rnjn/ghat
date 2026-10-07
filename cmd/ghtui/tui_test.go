@@ -12,9 +12,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/cache"
-	"ghtui/internal/gh"
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/cache"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 // slowAPI answers every request after a delay, so quitting happens while

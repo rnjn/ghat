@@ -9,8 +9,8 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/actions"
-	"ghtui/internal/workflow"
+	"github.com/rnjn/ghtui/internal/actions"
+	"github.com/rnjn/ghtui/internal/workflow"
 )
 
 type fieldKind int

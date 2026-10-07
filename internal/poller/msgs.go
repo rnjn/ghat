@@ -5,7 +5,7 @@ package poller
 import (
 	"time"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 // ReposUpdated means the discovered repo set changed.

@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 // Version changes whenever the file format does; other versions are misses.

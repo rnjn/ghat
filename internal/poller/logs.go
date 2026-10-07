@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 // logRetries is how many times a completed job's missing log is refetched.

@@ -9,8 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/poller"
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 // Context is what screens may use: the store, poll refresh, and a clock.

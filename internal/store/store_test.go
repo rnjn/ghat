@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 func t0() time.Time { return time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC) }

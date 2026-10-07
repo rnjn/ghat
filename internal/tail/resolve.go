@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 // ErrAmbiguousRun means a run ID was given but no single job can be chosen.

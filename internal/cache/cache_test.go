@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/store"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/store"
 )
 
 var now = time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)

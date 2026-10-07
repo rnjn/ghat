@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/poller"
 )
 
 // maxTitle keeps long screen titles from crowding out the status bar.

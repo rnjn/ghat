@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 // fakeAPI serves jobs by ID and runs' job lists by run ID.

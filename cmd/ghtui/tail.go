@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ghtui/internal/gh"
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 func newTailCmd(d *deps) *cobra.Command {

@@ -1,4 +1,4 @@
-module ghtui
+module github.com/rnjn/ghtui
 
 go 1.26.0
 

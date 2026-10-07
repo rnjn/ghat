@@ -7,7 +7,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/tail"
+	"github.com/rnjn/ghtui/internal/tail"
 )
 
 // tailSearch is the Tail screen's / search: literal, case-insensitive.

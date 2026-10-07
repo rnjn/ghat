@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"ghtui/internal/gh"
+	"github.com/rnjn/ghtui/internal/gh"
 )
 
 const (

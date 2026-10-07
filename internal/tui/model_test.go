@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"ghtui/internal/poller"
+	"github.com/rnjn/ghtui/internal/poller"
 )
 
 func newTestModel(t *testing.T) (Model, chan any) {
