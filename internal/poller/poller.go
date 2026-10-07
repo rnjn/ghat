@@ -49,12 +49,40 @@ type Poller struct {
 	authFailed bool
 	pauseUntil time.Time
 	lastRate   RateLimit
+
+	lastDiscovery  time.Time
+	afterDiscovery func()
+}
+
+// Option configures a Poller.
+type Option func(*Poller)
+
+// WithLastDiscovery says the store was filled from a cache saved at t: the
+// first discovery waits until t plus the discovery interval, and the
+// cached repos' runs are polled straight away with their ETags.
+func WithLastDiscovery(t time.Time) Option {
+	return func(p *Poller) { p.lastDiscovery = t }
+}
+
+// WithAfterDiscovery runs f (on the poller goroutine) after each successful
+// discovery; used to save the cache.
+func WithAfterDiscovery(f func()) Option {
+	return func(p *Poller) { p.afterDiscovery = f }
 }
 
 // New returns a poller writing into st and reporting changes through send.
-func New(api API, st *store.Store, cfg config.Config, send func(any)) *Poller {
+func New(api API, st *store.Store, cfg config.Config, send func(any), opts ...Option) *Poller {
 	p := &Poller{api: api, st: st, cfg: cfg, send: send, sched: newSchedule(), wake: make(chan struct{}, 1), polled: map[string]bool{}, jobsDone: map[string]bool{}, failures: map[string]int{}}
+	for _, o := range opts {
+		o(p)
+	}
 	p.sched.set("repos", time.Time{})
+	if !p.lastDiscovery.IsZero() {
+		p.sched.set("repos", p.lastDiscovery.Add(discoveryInterval))
+		for _, r := range st.Repos() {
+			p.sched.set("runs:"+r.Repo.Key(), time.Time{})
+		}
+	}
 	return p
 }
 
@@ -179,6 +207,9 @@ func (p *Poller) discover(ctx context.Context, now time.Time) {
 		p.sched.setIfAbsent("runs:"+s.Repo.Key(), time.Time{})
 	}
 	p.send(ReposUpdated{})
+	if p.afterDiscovery != nil {
+		p.afterDiscovery()
+	}
 }
 
 // pollRuns fetches one repo's runs with its ETag.

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"ghtui/internal/actions"
+	"ghtui/internal/cache"
 	"ghtui/internal/poller"
 	"ghtui/internal/store"
 	"ghtui/internal/tui"
@@ -30,6 +31,14 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 	defer cancel()
 
 	st := store.New()
+	var popts []poller.Option
+	if snap, ok := cache.Load(d.cacheDir); ok {
+		snap.Apply(st)
+		popts = append(popts, poller.WithLastDiscovery(snap.SavedAt))
+	}
+	// Cache write failures are ignored: the cache is only an optimisation.
+	saveCache := func() { _ = cache.Save(d.cacheDir, cache.FromStore(st, time.Now())) }
+	popts = append(popts, poller.WithAfterDiscovery(saveCache))
 	msgs := make(chan any, 256)
 	send := func(m any) {
 		select {
@@ -37,7 +46,7 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 		case <-ctx.Done():
 		}
 	}
-	p := poller.New(c, st, cfg, send)
+	p := poller.New(c, st, cfg, send, popts...)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -54,6 +63,7 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 	cancel()
 	wg.Wait()
 	close(msgs) // poller is stopped; this releases the TUI's channel reader
+	saveCache()
 	if err != nil && ctx.Err() != nil && cmd.Context().Err() == nil {
 		// The program ended because we cancelled after it quit; not an error.
 		return nil

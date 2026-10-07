@@ -8,6 +8,7 @@ import (
 
 	"ghtui/internal/config"
 	"ghtui/internal/gh"
+	"ghtui/internal/store"
 )
 
 func TestFirstTickDiscoversThenPollsEveryRepo(t *testing.T) {
@@ -184,4 +185,49 @@ func withoutRate(msgs []any) []any {
 		}
 	}
 	return out
+}
+
+func cachedHarness(t *testing.T, cacheAge time.Duration) *harness {
+	t.Helper()
+	h := newHarness(ghRepo("a", "x", time.Hour))
+	h.st.SetRepos([]store.RepoState{{Repo: ghRepo("a", "x", time.Hour)}})
+	h.st.SetRuns("a/x", []gh.Run{ghRun(1, "a/x", "completed", "success")}, `"cached"`)
+	h.p = New(h.api, h.st, config.Default(), func(m any) { h.msgs = append(h.msgs, m) }, WithLastDiscovery(h.now.Add(-cacheAge)))
+	return h
+}
+
+func TestRecentCacheDelaysDiscoveryButPollsRuns(t *testing.T) {
+	h := cachedHarness(t, 4*time.Minute)
+	h.tickAt(0)
+	calls := h.api.takeCalls()
+	if countCalls(calls, "ListRepos") != 0 || len(calls) != 1 || calls[0] != `ListRuns a/x etag="cached"` {
+		t.Fatalf("calls = %v", calls)
+	}
+	h.tickAt(6*time.Minute - time.Second)
+	if countCalls(h.api.takeCalls(), "ListRepos") != 0 {
+		t.Fatal("discovered before cache age reached 10m")
+	}
+	h.tickAt(6 * time.Minute)
+	if countCalls(h.api.takeCalls(), "ListRepos") != 1 {
+		t.Fatal("no discovery at SavedAt+10m")
+	}
+}
+
+func TestOldCacheRediscoversImmediately(t *testing.T) {
+	h := cachedHarness(t, 11*time.Minute)
+	h.tickAt(0)
+	if calls := h.api.takeCalls(); len(calls) == 0 || calls[0] != "ListRepos" {
+		t.Fatalf("calls = %v", calls)
+	}
+}
+
+func TestAfterDiscoveryHook(t *testing.T) {
+	h := newHarness(ghRepo("a", "x", time.Hour))
+	n := 0
+	h.p = New(h.api, h.st, config.Default(), func(any) {}, WithAfterDiscovery(func() { n++ }))
+	h.tickAt(0)
+	h.tickAt(10 * time.Minute)
+	if n != 2 {
+		t.Fatalf("hook ran %d times, want 2", n)
+	}
 }

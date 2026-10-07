@@ -9,19 +9,21 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
+	"ghtui/internal/cache"
 	"ghtui/internal/config"
 	"ghtui/internal/gh"
 )
 
 // deps are the process-level effects commands use, injected for tests.
 type deps struct {
-	env     func(string) string
-	run     func(name string, args ...string) ([]byte, error)
-	now     func() time.Time
-	sleep   func(ctx context.Context, d time.Duration) error
-	cfgPath string
-	apiURL  string
-	tuiOpts []tea.ProgramOption // test overrides for the TUI program
+	env      func(string) string
+	run      func(name string, args ...string) ([]byte, error)
+	now      func() time.Time
+	sleep    func(ctx context.Context, d time.Duration) error
+	cfgPath  string
+	cacheDir string
+	apiURL   string
+	tuiOpts  []tea.ProgramOption // test overrides for the TUI program
 }
 
 func defaultDeps() *deps {
@@ -30,8 +32,9 @@ func defaultDeps() *deps {
 		run: func(name string, args ...string) ([]byte, error) {
 			return exec.Command(name, args...).Output()
 		},
-		now:     time.Now,
-		cfgPath: config.DefaultPath(),
+		now:      time.Now,
+		cfgPath:  config.DefaultPath(),
+		cacheDir: cache.Dir(),
 	}
 }
 
