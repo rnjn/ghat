@@ -1,4 +1,4 @@
-▸ Run golangci-lint
+▾ Run golangci-lint
 main.go:3: unused
 error: lint failed
 warning: deprecated

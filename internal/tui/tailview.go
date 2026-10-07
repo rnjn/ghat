@@ -23,9 +23,9 @@ type tailScreen struct {
 	job         gh.Job
 	step        int // step to scroll to once the log arrives; 0 = none
 
-	vis        []int // indices of displayable lines (end-group markers hidden)
-	indexed    int   // buffer lines already examined for vis
-	offset     int
+	ix         logIndex
+	cur        int // cursor: index into ix.vis
+	offset     int // first visible row: index into ix.vis
 	follow     bool
 	timestamps bool
 	logErr     string
@@ -34,7 +34,7 @@ type tailScreen struct {
 
 // NewTail opens job; step, when non-zero, is the step to scroll to.
 func NewTail(owner, repo string, job gh.Job, step int) Screen {
-	return &tailScreen{owner: owner, repo: repo, job: job, step: step, follow: step == 0}
+	return &tailScreen{owner: owner, repo: repo, job: job, step: step, follow: step == 0, ix: newLogIndex()}
 }
 
 func (t *tailScreen) Title() string { return t.job.Name }
@@ -69,12 +69,12 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 			return t, openURL(ctx, url)
 		}
-		t.key(m.String())
+		t.key(m.String(), ctx.Store.Log(t.job.ID).Lines)
 	}
 	return t, nil
 }
 
-func (t *tailScreen) key(k string) {
+func (t *tailScreen) key(k string, lines []tail.LogLine) {
 	page := max(1, t.lastH-1)
 	switch k {
 	case "t":
@@ -82,27 +82,60 @@ func (t *tailScreen) key(k string) {
 	case "G", "end":
 		t.follow = true
 	case "g", "home":
-		t.follow, t.offset = false, 0
+		t.move(-len(t.ix.vis))
 	case "j", "down":
-		t.scroll(1)
+		t.move(1)
 	case "k", "up":
-		t.scroll(-1)
+		t.move(-1)
 	case "pgdown", "ctrl+f", " ":
-		t.scroll(page)
+		t.move(page)
 	case "pgup", "ctrl+b":
-		t.scroll(-page)
+		t.move(-page)
+	case "z":
+		t.toggleFold(lines)
+	case "Z":
+		clear(t.ix.folded)
+		t.refold(lines, -1)
 	}
 }
 
-func (t *tailScreen) scroll(delta int) {
+// move shifts the cursor, leaving follow mode.
+func (t *tailScreen) move(delta int) {
 	if t.follow {
-		t.offset = t.maxOffset()
+		t.cur = len(t.ix.vis) - 1
 	}
 	t.follow = false
-	t.offset = max(0, min(t.offset+delta, t.maxOffset()))
+	t.cur = max(0, min(t.cur+delta, len(t.ix.vis)-1))
 }
 
-func (t *tailScreen) maxOffset() int { return max(0, len(t.vis)-t.lastH) }
+// toggleFold folds the group under the cursor, or unfolds a folded header.
+func (t *tailScreen) toggleFold(lines []tail.LogLine) {
+	if len(t.ix.vis) == 0 || len(lines) < t.ix.indexed {
+		return
+	}
+	if t.follow {
+		t.cur = len(t.ix.vis) - 1
+	}
+	h := t.ix.header(t.ix.vis[t.cur], lines)
+	if h < 0 {
+		return
+	}
+	t.ix.folded[h] = !t.ix.folded[h]
+	t.follow = false
+	t.refold(lines, h)
+}
+
+// refold rebuilds the visible lines and puts the cursor on line keep (or
+// keeps the current line when keep is -1).
+func (t *tailScreen) refold(lines []tail.LogLine, keep int) {
+	if keep < 0 && len(t.ix.vis) > 0 {
+		keep = t.ix.vis[t.cur]
+	}
+	t.ix.rebuild(lines)
+	if keep >= 0 {
+		t.cur = t.ix.position(keep)
+	}
+}
 
 // refresh picks up the latest job state and indexes new log lines.
 func (t *tailScreen) refresh(ctx *Context) []tail.LogLine {
@@ -112,14 +145,7 @@ func (t *tailScreen) refresh(ctx *Context) []tail.LogLine {
 		}
 	}
 	lines := ctx.Store.Log(t.job.ID).Lines
-	if len(lines) < t.indexed {
-		t.vis, t.indexed = nil, 0
-	}
-	for ; t.indexed < len(lines); t.indexed++ {
-		if lines[t.indexed].Kind != tail.EndGroup {
-			t.vis = append(t.vis, t.indexed)
-		}
-	}
+	t.ix.add(lines)
 	return lines
 }
 
@@ -131,26 +157,42 @@ func (t *tailScreen) View(ctx *Context, width, height int) string {
 	bodyH := height - 1
 	t.lastH = bodyH
 	now := ctx.Now()
-	if len(t.vis) == 0 {
+	if len(t.ix.vis) == 0 {
 		return fit(append(t.waitingBody(ctx), t.spinnerFooter(now)), width, height)
 	}
+	vis := t.ix.vis
 	if t.step > 0 {
-		for i, idx := range t.vis {
+		for i, idx := range vis {
 			if lines[idx].StepNumber == t.step {
-				t.offset = i
+				t.cur, t.offset = i, i
 				break
 			}
 		}
 		t.step = 0
 	}
 	if t.follow {
-		t.offset = t.maxOffset()
+		t.cur = len(vis) - 1
 	}
-	t.offset = max(0, min(t.offset, t.maxOffset()))
-	end := min(len(t.vis), t.offset+bodyH)
+	t.cur = max(0, min(t.cur, len(vis)-1))
+	maxOff := max(0, len(vis)-bodyH)
+	if t.cur < t.offset {
+		t.offset = t.cur
+	}
+	if t.cur >= t.offset+bodyH {
+		t.offset = t.cur - bodyH + 1
+	}
+	if t.follow {
+		t.offset = maxOff
+	}
+	t.offset = max(0, min(t.offset, maxOff))
+	end := min(len(vis), t.offset+bodyH)
 	out := make([]string, 0, height)
-	for _, idx := range t.vis[t.offset:end] {
-		out = append(out, t.render(lines[idx]))
+	for i := t.offset; i < end; i++ {
+		l := t.render(lines, vis[i])
+		if i == t.cur && !t.follow {
+			l = styleCursor.Render(ansi.Strip(l))
+		}
+		out = append(out, l)
 	}
 	for len(out) < bodyH {
 		out = append(out, "")
@@ -159,19 +201,24 @@ func (t *tailScreen) View(ctx *Context, width, height int) string {
 	if t.follow {
 		mode = "following"
 	}
-	footer := styleDim.Render(fmt.Sprintf(" lines %d–%d of %d · %s", t.offset+1, end, len(t.vis), mode))
+	footer := styleDim.Render(fmt.Sprintf(" lines %d–%d of %d · %s", t.offset+1, end, len(vis), mode))
 	if t.job.Status != "completed" {
 		footer = t.spinnerFooter(now)
 	}
 	return fit(append(out, footer), width, height)
 }
 
-func (t *tailScreen) render(l tail.LogLine) string {
+func (t *tailScreen) render(lines []tail.LogLine, i int) string {
+	l := lines[i]
 	text := sanitize(l.Text)
 	var s string
 	switch l.Kind {
 	case tail.Group:
-		s = styleGroup.Render("▸ " + text)
+		if t.ix.folded[i] {
+			s = styleGroup.Render(fmt.Sprintf("▸ %s (%d lines)", text, t.ix.count[i]))
+		} else {
+			s = styleGroup.Render("▾ " + text)
+		}
 	case tail.Error:
 		s = styleError.Render("error: " + text)
 	case tail.Warning:
