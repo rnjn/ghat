@@ -33,6 +33,9 @@ func runCmd(cmd tea.Cmd) []tea.Msg {
 }
 
 func safeRun(c tea.Cmd) []tea.Msg {
+	if c == nil {
+		return nil
+	}
 	done := make(chan []tea.Msg, 1)
 	go func() { done <- runCmd(c) }()
 	select {

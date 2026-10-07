@@ -1,0 +1,12 @@
+  Deploy · acme/api
+› ref  main 
+    branch or tag to run on
+  env  ◂ staging ▸  (staging, prod)
+    choice, required · Where to deploy
+  dry  true  (space toggles)
+    boolean
+  tag   
+    string, required · Image tag
+  n    3 
+
+  tab/↓ next · shift+tab/↑ back · enter on last field submits · esc cancels

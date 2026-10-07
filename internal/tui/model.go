@@ -104,8 +104,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		now := m.ctx.Now()
 		if msg.Err != nil {
 			m.status.observe(poller.PollerError{Resource: "action", Err: msg.Err}, now)
-		} else {
-			m.status.flash(msg.Text, now.Add(flashFor))
+			return m, m.forward(msg)
+		}
+		m.status.flash(msg.Text, now.Add(flashFor))
+		for i := 0; i < msg.Pop && len(m.stack) > 1; i++ {
+			m.pop()
 		}
 		return m, m.forward(msg)
 	case tickMsg:
@@ -144,7 +147,12 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.status.flash("cancelled", m.ctx.Now().Add(flashFor))
 		return m, nil
 	}
-	if k == "ctrl+c" || k == "q" {
+	if m.authErr == nil && !m.help {
+		if c, ok := m.top().(keyCapturer); ok && c.CapturesKeys() && k != "esc" {
+			return m, m.forward(msg)
+		}
+	}
+	if k == "q" {
 		return m, tea.Quit
 	}
 	if m.authErr != nil {
@@ -167,14 +175,19 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "esc":
 		if len(m.stack) > 1 {
-			if p, ok := m.top().(popper); ok {
-				p.OnPop(m.ctx)
-			}
-			m.stack = m.stack[:len(m.stack)-1]
+			m.pop()
 		}
 		return m, nil
 	}
 	return m, m.forward(msg)
+}
+
+// pop closes the top screen.
+func (m *Model) pop() {
+	if p, ok := m.top().(popper); ok {
+		p.OnPop(m.ctx)
+	}
+	m.stack = m.stack[:len(m.stack)-1]
 }
 
 // forward sends msg to the top screen.

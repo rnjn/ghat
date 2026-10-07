@@ -13,7 +13,12 @@ type Confirm struct {
 type ActionResult struct {
 	Text string
 	Err  error
+	Pop  int // screens to close on success
 }
+
+// keyCapturer is implemented by screens that take typed text; the model
+// then passes them every key except ctrl+c and esc.
+type keyCapturer interface{ CapturesKeys() bool }
 
 // ask returns a command that opens a confirmation prompt.
 func ask(prompt string, run tea.Cmd) tea.Cmd {
