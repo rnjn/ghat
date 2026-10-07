@@ -26,6 +26,11 @@ type Store struct {
 	runs    map[string][]gh.Run // by repo key, newest first
 	jobs    map[int64][]gh.Job  // by run ID
 	watched map[int64]bool
+
+	focusRun int64
+	tail     tailTarget
+	logs     map[int64]*LogBuffer
+	logOrder []int64 // least recently used first
 }
 
 // New returns an empty store.
@@ -35,6 +40,7 @@ func New() *Store {
 		runs:    map[string][]gh.Run{},
 		jobs:    map[int64][]gh.Job{},
 		watched: map[int64]bool{},
+		logs:    map[int64]*LogBuffer{},
 	}
 }
 
