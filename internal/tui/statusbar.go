@@ -20,6 +20,7 @@ type statusBar struct {
 	errAt    time.Time
 	flashMsg string
 	flashTo  time.Time
+	prompt   string
 }
 
 // flash shows msg in place of the usual parts until until.
@@ -39,6 +40,9 @@ func (s *statusBar) observe(msg any, at time.Time) {
 
 func (s *statusBar) view(title string, width int, now time.Time) string {
 	parts := []string{title}
+	if s.prompt != "" {
+		parts = append(parts, s.prompt)
+	}
 	if s.flashMsg != "" && now.Before(s.flashTo) {
 		parts = append(parts, "★ "+s.flashMsg)
 	}

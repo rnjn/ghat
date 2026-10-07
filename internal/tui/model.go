@@ -62,6 +62,7 @@ type Model struct {
 	help    bool
 	status  *statusBar
 	authErr error
+	confirm *Confirm
 }
 
 // NewModel starts on the Board and listens to msgs from the poller.
@@ -93,6 +94,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Push:
 		m.stack = append(m.stack, msg.Screen)
 		return m, nil
+	case Confirm:
+		m.confirm = &msg
+		m.status.prompt = msg.Prompt + " [y/N]"
+		return m, nil
+	case ActionResult:
+		now := m.ctx.Now()
+		if msg.Err != nil {
+			m.status.observe(poller.PollerError{Resource: "action", Err: msg.Err}, now)
+		} else {
+			m.status.flash(msg.Text, now.Add(flashFor))
+		}
+		return m, m.forward(msg)
 	case tickMsg:
 		return m, tick()
 	case pollerMsg:
@@ -117,6 +130,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	k := msg.String()
+	if k == "ctrl+c" {
+		return m, tea.Quit
+	}
+	if m.confirm != nil {
+		run := m.confirm.Run
+		m.confirm, m.status.prompt = nil, ""
+		if k == "y" {
+			return m, run
+		}
+		m.status.flash("cancelled", m.ctx.Now().Add(flashFor))
+		return m, nil
+	}
 	if k == "ctrl+c" || k == "q" {
 		return m, tea.Quit
 	}
