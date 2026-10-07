@@ -8,8 +8,10 @@ import (
 	"net/http"
 )
 
-// ErrLogNotReady means the job has no completed steps yet, so GitHub has no
-// log to serve. For an in-progress job this is expected, not a failure.
+// ErrLogNotReady means GitHub has no log to serve yet: either the API
+// answers 404, or it redirects to a log blob that does not exist yet (the
+// current results backend only writes the job log once the job completes).
+// For an in-progress job this is expected, not a failure.
 var ErrLogNotReady = errors.New("job log not available yet")
 
 // JobLog returns the plain-text log of a job: every completed step so far.
@@ -55,6 +57,9 @@ func (c *Client) fetchBlob(ctx context.Context, u string) ([]byte, error) {
 		return nil, err
 	}
 	defer func() { _ = res.Body.Close() }()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, ErrLogNotReady
+	}
 	if res.StatusCode != http.StatusOK {
 		return nil, &APIError{Status: res.StatusCode, Message: "log download failed"}
 	}

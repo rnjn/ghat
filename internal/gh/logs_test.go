@@ -59,3 +59,20 @@ func TestJobLogOtherErrors(t *testing.T) {
 		t.Fatalf("err = %v, want 500 APIError", err)
 	}
 }
+
+// GitHub redirects in-progress jobs to a blob that does not exist until the
+// job completes; that is "not ready", not a failure.
+func TestJobLogBlobNotFoundIsNotReady(t *testing.T) {
+	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><Error><Code>BlobNotFound</Code></Error>`))
+	}))
+	defer blob.Close()
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, blob.URL+"/job-logs.txt", http.StatusFound)
+	})
+	_, err := c.JobLog(context.Background(), "o", "r", 7)
+	if !errors.Is(err, ErrLogNotReady) {
+		t.Fatalf("err = %v, want ErrLogNotReady", err)
+	}
+}
