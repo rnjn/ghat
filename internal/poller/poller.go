@@ -37,12 +37,17 @@ type Poller struct {
 	sched *schedule
 	wake  chan struct{}
 
-	polled map[string]bool // runs keys polled at least once (poller goroutine only)
+	// Poller-goroutine-only state.
+	polled     map[string]bool // runs keys polled at least once
+	jobsDone   map[string]bool // jobs keys of completed runs already fetched
+	tailJob    int64
+	logRetries int
+	logDone    bool
 }
 
 // New returns a poller writing into st and reporting changes through send.
 func New(api API, st *store.Store, cfg config.Config, send func(any)) *Poller {
-	p := &Poller{api: api, st: st, cfg: cfg, send: send, sched: newSchedule(), wake: make(chan struct{}, 1), polled: map[string]bool{}}
+	p := &Poller{api: api, st: st, cfg: cfg, send: send, sched: newSchedule(), wake: make(chan struct{}, 1), polled: map[string]bool{}, jobsDone: map[string]bool{}}
 	p.sched.set("repos", time.Time{})
 	return p
 }
@@ -75,6 +80,7 @@ func (p *Poller) Run(ctx context.Context) {
 // Tick runs every resource poll that is due at now, including resources
 // that become due during the tick (repos found by discovery), each once.
 func (p *Poller) Tick(ctx context.Context, now time.Time) {
+	p.syncInterest()
 	done := map[string]bool{}
 	for {
 		var key string
@@ -98,6 +104,10 @@ func (p *Poller) poll(ctx context.Context, now time.Time, key string) {
 		p.discover(ctx, now)
 	case strings.HasPrefix(key, "runs:"):
 		p.pollRuns(ctx, now, strings.TrimPrefix(key, "runs:"))
+	case strings.HasPrefix(key, "jobs:"):
+		p.pollJobs(ctx, now, key)
+	case strings.HasPrefix(key, "log:"):
+		p.pollLog(ctx, now, key)
 	default:
 		p.sched.remove(key)
 	}
