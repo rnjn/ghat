@@ -49,6 +49,6 @@ func newRootCmdWith(d *deps) *cobra.Command {
 	cmd.SetVersionTemplate("ghtui {{.Version}}\n")
 	cmd.PersistentFlags().StringVar(&d.apiURL, "api-url", "", "GitHub API base URL")
 	_ = cmd.PersistentFlags().MarkHidden("api-url")
-	cmd.AddCommand(newListCmd(d), newTailCmd(d))
+	cmd.AddCommand(newListCmd(d), newTailCmd(d), newWatchCmd(d))
 	return cmd
 }

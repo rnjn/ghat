@@ -36,7 +36,7 @@ func NewTailer(src Source, owner, repo string, jobID int64, opts Options) *Taile
 		opts.Interval = 5 * time.Second
 	}
 	if opts.Sleep == nil {
-		opts.Sleep = sleepCtx
+		opts.Sleep = SleepContext
 	}
 	return &Tailer{src: src, owner: owner, repo: repo, jobID: jobID, opts: opts}
 }
@@ -125,7 +125,8 @@ func (t *Tailer) poll(ctx context.Context, job gh.Job, emit func(LogLine)) ([]Lo
 	return lines, nil
 }
 
-func sleepCtx(ctx context.Context, d time.Duration) error {
+// SleepContext sleeps for d or until ctx is done, returning ctx.Err() then.
+func SleepContext(ctx context.Context, d time.Duration) error {
 	timer := time.NewTimer(d)
 	defer timer.Stop()
 	select {
