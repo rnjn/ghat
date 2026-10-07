@@ -25,32 +25,32 @@ func (p *Poller) pollLog(ctx context.Context, now time.Time, key string) {
 		p.finishLog(key)
 		return
 	}
+	interval := p.cfg.Poll.Jobs.D()
 	job, err := p.tailJobState(ctx, owner, repo, jobID)
 	if err != nil {
-		p.send(PollerError{Resource: key, Err: err})
-		p.sched.set(key, now.Add(p.cfg.Poll.Jobs.D()))
+		p.failed(key, now, interval, err)
 		return
 	}
 	if job.Status != "completed" {
-		p.sched.set(key, now.Add(p.cfg.Poll.Jobs.D()))
+		p.sched.set(key, now.Add(p.scale(interval)))
 		return
 	}
 	raw, err := p.api.JobLog(ctx, owner, repo, jobID)
 	if err != nil {
-		if errors.Is(err, gh.ErrLogNotReady) && p.logRetries < maxLogRetries {
-			p.logRetries++
-			p.sched.set(key, now.Add(p.cfg.Poll.Jobs.D()))
+		if !errors.Is(err, gh.ErrLogNotReady) {
+			p.failed(key, now, interval, err)
 			return
 		}
-		if errors.Is(err, gh.ErrLogNotReady) {
-			err = fmt.Errorf("log not available yet or expired: %w", err)
-			p.finishLog(key)
-		} else {
-			p.sched.set(key, now.Add(p.cfg.Poll.Jobs.D()))
+		if p.logRetries < maxLogRetries {
+			p.logRetries++
+			p.sched.set(key, now.Add(p.scale(interval)))
+			return
 		}
-		p.send(PollerError{Resource: key, Err: err})
+		p.finishLog(key)
+		p.send(PollerError{Resource: key, Err: fmt.Errorf("log not available yet or expired: %w", err)})
 		return
 	}
+	p.succeeded(key)
 	from, to := p.st.SetLog(jobID, tail.ParseLines(raw, job.Steps), true)
 	if to > from {
 		p.send(LogAppended{JobID: jobID, From: from, To: to})

@@ -2,6 +2,8 @@ package poller
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -43,11 +45,15 @@ type Poller struct {
 	tailJob    int64
 	logRetries int
 	logDone    bool
+	failures   map[string]int
+	authFailed bool
+	pauseUntil time.Time
+	lastRate   RateLimit
 }
 
 // New returns a poller writing into st and reporting changes through send.
 func New(api API, st *store.Store, cfg config.Config, send func(any)) *Poller {
-	p := &Poller{api: api, st: st, cfg: cfg, send: send, sched: newSchedule(), wake: make(chan struct{}, 1), polled: map[string]bool{}, jobsDone: map[string]bool{}}
+	p := &Poller{api: api, st: st, cfg: cfg, send: send, sched: newSchedule(), wake: make(chan struct{}, 1), polled: map[string]bool{}, jobsDone: map[string]bool{}, failures: map[string]int{}}
 	p.sched.set("repos", time.Time{})
 	return p
 }
@@ -80,9 +86,13 @@ func (p *Poller) Run(ctx context.Context) {
 // Tick runs every resource poll that is due at now, including resources
 // that become due during the tick (repos found by discovery), each once.
 func (p *Poller) Tick(ctx context.Context, now time.Time) {
+	defer p.reportRate()
 	p.syncInterest()
 	done := map[string]bool{}
 	for {
+		if p.paused(now) {
+			return
+		}
 		var key string
 		for _, k := range p.sched.dueKeys(now) {
 			if !done[k] {
@@ -116,12 +126,13 @@ func (p *Poller) poll(ctx context.Context, now time.Time, key string) {
 // discover rebuilds the repo set: pushed within the window, plus pinned,
 // minus excluded. New repos get their first runs poll now, then staggered.
 func (p *Poller) discover(ctx context.Context, now time.Time) {
-	p.sched.set("repos", now.Add(discoveryInterval))
+	p.sched.set("repos", now.Add(p.scale(discoveryInterval)))
 	found, err := p.api.ListRepos(ctx, now.Add(-p.cfg.Repos.PushedWithin.D()))
 	if err != nil {
-		p.send(PollerError{Resource: "repos", Err: err})
+		p.failed("repos", now, discoveryInterval, err)
 		return
 	}
+	p.succeeded("repos")
 	excluded := func(k string) bool { return slices.Contains(p.cfg.Repos.Exclude, k) }
 	var states []store.RepoState
 	seen := map[string]bool{}
@@ -174,26 +185,46 @@ func (p *Poller) pollRuns(ctx context.Context, now time.Time, repoKey string) {
 		p.sched.remove("runs:" + repoKey)
 		return
 	}
+	key := "runs:" + repoKey
+	if rs.Unavailable {
+		p.sched.remove(key)
+		return
+	}
 	runs, resp, err := p.api.ListRuns(ctx, rs.Repo.Owner, rs.Repo.Name, gh.RunsOpts{PerPage: runsPerPage}, rs.RunsETag)
-	if err != nil {
-		p.send(PollerError{Resource: "runs:" + repoKey, Err: err})
-	} else if !resp.NotModified {
+	var ae *gh.APIError
+	switch {
+	case errors.As(err, &ae) && (ae.Status == http.StatusNotFound || ae.Status == http.StatusForbidden):
+		// Unreadable (no access, Actions disabled): skip until rediscovery.
+		p.st.MarkUnavailable(repoKey, ae.Error())
+		p.sched.remove(key)
+		p.send(RunsUpdated{RepoKey: repoKey})
+		return
+	case err != nil:
+		p.failed(key, now, p.runsInterval(repoKey), err)
+		return
+	}
+	p.succeeded(key)
+	if !resp.NotModified {
 		completed := p.st.SetRuns(repoKey, runs, resp.ETag)
 		p.send(RunsUpdated{RepoKey: repoKey})
 		for _, r := range completed {
 			p.send(RunCompleted{Run: r})
 		}
 	}
-	p.sched.set("runs:"+repoKey, p.nextRuns(now, repoKey, first))
+	p.sched.set(key, p.nextRuns(now, repoKey, first))
+}
+
+func (p *Poller) runsInterval(repoKey string) time.Duration {
+	if p.st.AnyActive(repoKey) {
+		return p.cfg.Poll.RunsActive.D()
+	}
+	return p.cfg.Poll.RunsIdle.D()
 }
 
 // nextRuns is 15s for repos with active runs, else 60s. A repo's first
 // follow-up is offset by its position so polls spread across the interval.
 func (p *Poller) nextRuns(now time.Time, repoKey string, first bool) time.Time {
-	interval := p.cfg.Poll.RunsIdle.D()
-	if p.st.AnyActive(repoKey) {
-		interval = p.cfg.Poll.RunsActive.D()
-	}
+	interval := p.scale(p.runsInterval(repoKey))
 	if !first {
 		return now.Add(interval)
 	}

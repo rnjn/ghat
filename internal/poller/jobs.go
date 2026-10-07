@@ -63,10 +63,10 @@ func (p *Poller) pollJobs(ctx context.Context, now time.Time, key string) {
 	owner, repo, _ := strings.Cut(run.RepoKey, "/")
 	jobs, err := p.api.ListJobs(ctx, owner, repo, runID)
 	if err != nil {
-		p.send(PollerError{Resource: key, Err: err})
-		p.sched.set(key, now.Add(p.cfg.Poll.Jobs.D()))
+		p.failed(key, now, p.cfg.Poll.Jobs.D(), err)
 		return
 	}
+	p.succeeded(key)
 	p.st.SetJobs(runID, jobs)
 	p.send(JobsUpdated{RunID: runID})
 	if run.Status == "completed" {
@@ -74,5 +74,5 @@ func (p *Poller) pollJobs(ctx context.Context, now time.Time, key string) {
 		p.sched.remove(key)
 		return
 	}
-	p.sched.set(key, now.Add(p.cfg.Poll.Jobs.D()))
+	p.sched.set(key, now.Add(p.scale(p.cfg.Poll.Jobs.D())))
 }

@@ -17,7 +17,7 @@ func TestFirstTickDiscoversThenPollsEveryRepo(t *testing.T) {
 	if calls != "ListRepos|ListRuns a/x etag=|ListRuns a/y etag=" {
 		t.Fatalf("calls = %s", calls)
 	}
-	msgs := h.takeMsgs()
+	msgs := withoutRate(h.takeMsgs())
 	if len(msgs) != 3 {
 		t.Fatalf("msgs = %#v", msgs)
 	}
@@ -166,4 +166,14 @@ func TestRefreshMakesResourceDueNow(t *testing.T) {
 	if n := countCalls(h.api.takeCalls(), "ListRepos"); n != 1 {
 		t.Fatalf("ListRepos calls after refresh = %d", n)
 	}
+}
+
+func withoutRate(msgs []any) []any {
+	var out []any
+	for _, m := range msgs {
+		if _, ok := m.(RateLimit); !ok {
+			out = append(out, m)
+		}
+	}
+	return out
 }
