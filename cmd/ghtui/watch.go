@@ -104,16 +104,23 @@ func (w *watcher) poll(ctx context.Context) (gh.Run, error) {
 		return run, err
 	}
 	ts := w.now().Local().Format("15:04:05")
+	first := w.run == ""
+	printRun := func() {
+		if s := state(run.Status, run.Conclusion); w.run != s {
+			w.run = s
+			_, _ = fmt.Fprintf(w.out, "%s run %s\n", ts, s)
+		}
+	}
+	if first {
+		printRun() // the starting state reads top-down: run, then its jobs
+	}
 	for _, j := range jobs {
 		if s := state(j.Status, j.Conclusion); w.jobs[j.ID] != s {
 			w.jobs[j.ID] = s
 			_, _ = fmt.Fprintf(w.out, "%s job %s %s\n", ts, j.Name, s)
 		}
 	}
-	if s := state(run.Status, run.Conclusion); w.run != s {
-		w.run = s
-		_, _ = fmt.Fprintf(w.out, "%s run %s\n", ts, s)
-	}
+	printRun() // later, a run finishes after its jobs
 	return run, nil
 }
 

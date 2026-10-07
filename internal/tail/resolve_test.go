@@ -92,8 +92,8 @@ func TestResolveJobAmbiguousRun(t *testing.T) {
 func TestResolveJobNotFound(t *testing.T) {
 	c := fakeAPI(t, nil, nil)
 	_, err := ResolveJob(context.Background(), c, "o", "r", 404)
-	if !gh.IsNotFound(err) {
-		t.Fatalf("err = %v, want 404 APIError", err)
+	if !gh.IsNotFound(err) || !strings.Contains(err.Error(), "no job or run 404 in o/r") {
+		t.Fatalf("err = %v, want 404 naming the ID and repo", err)
 	}
 }
 

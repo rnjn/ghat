@@ -18,7 +18,8 @@ func growingJob(conclusion string) *fakeGH {
 		// The first GetJob is ResolveJob's; the tailer's polls follow.
 		statuses: []string{"in_progress", "in_progress", "in_progress", "completed"},
 		conc:     conclusion,
-		logs:     []string{"", l1, l1 + l2 + l3},
+		// fetched on the first running poll (404) and when completed
+		logs: []string{"", l1 + l2 + l3},
 	}
 }
 
@@ -32,7 +33,7 @@ func TestTailFollowsNewLinesOnly(t *testing.T) {
 	if out != want {
 		t.Fatalf("stdout:\n%q\nwant:\n%q", out, want)
 	}
-	if f.logCalls != 3 {
+	if f.logCalls != 2 {
 		t.Fatalf("log calls = %d", f.logCalls)
 	}
 }

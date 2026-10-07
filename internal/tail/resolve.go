@@ -37,6 +37,9 @@ func ResolveJob(ctx context.Context, c *gh.Client, owner, repo string, id int64)
 		return j, err
 	}
 	jobs, err := c.ListJobs(ctx, owner, repo, id)
+	if gh.IsNotFound(err) {
+		return gh.Job{}, fmt.Errorf("no job or run %d in %s/%s: %w", id, owner, repo, err)
+	}
 	if err != nil {
 		return gh.Job{}, err
 	}

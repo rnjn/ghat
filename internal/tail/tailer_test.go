@@ -63,9 +63,11 @@ func (h *harness) opts() Options {
 func (h *harness) emit(l LogLine) { h.got = append(h.got, l.Text) }
 
 func TestTailerEmitsOnlyNewLines(t *testing.T) {
+	// While running the log is fetched on the 1st poll only (then every 6th);
+	// the completed poll fetches again.
 	src := &fakeSource{
 		jobs: []gh.Job{running(), running(), running(), done("success")},
-		logs: []logResp{logOf("a"), logOf("a"), logOf("a", "b", "c"), logOf("a", "b", "c", "d")},
+		logs: []logResp{logOf("a"), logOf("a", "b", "c", "d")},
 	}
 	h := &harness{}
 	job, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit)
@@ -222,5 +224,21 @@ func TestTailerFailsFastOnClientErrors(t *testing.T) {
 	h := &harness{}
 	if _, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit); err == nil || src.logCalls != 1 {
 		t.Fatalf("err = %v, log calls %d", err, src.logCalls)
+	}
+}
+
+func TestTailerFetchesLogEverySixthPollWhileRunning(t *testing.T) {
+	jobs := make([]gh.Job, 13)
+	for i := range jobs {
+		jobs[i] = running()
+	}
+	src := &fakeSource{jobs: append(jobs, done("success")), logs: []logResp{logOf("a")}}
+	h := &harness{}
+	if _, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit); err != nil {
+		t.Fatal(err)
+	}
+	// polls 0, 6 and 12 while running, plus the completed poll
+	if src.logCalls != 4 {
+		t.Fatalf("log calls = %d, want 4", src.logCalls)
 	}
 }

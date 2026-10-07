@@ -28,7 +28,13 @@ type Tailer struct {
 	jobID   int64
 	opts    Options
 	emitted int
+	polls   int
 }
+
+// runningLogEvery is how often (in polls) the log is fetched while the job
+// runs. GitHub currently publishes logs only at completion, so this is a
+// cheap check in case that changes.
+const runningLogEvery = 6
 
 // NewTailer returns a tailer for jobID in owner/repo.
 func NewTailer(src Source, owner, repo string, jobID int64, opts Options) *Tailer {
@@ -56,10 +62,12 @@ func (t *Tailer) Run(ctx context.Context, emit func(LogLine)) (gh.Job, error) {
 	var job gh.Job
 	failures := 0
 	for {
-		lines, err := t.step(ctx, &job, emit)
+		lines, fetched, err := t.step(ctx, &job, emit)
 		switch {
 		case err == nil:
-			failures = 0
+			if fetched {
+				failures = 0 // a skipped poll proves nothing about the log
+			}
 			if job.Status == "completed" {
 				return job, t.finish(ctx, job, lines, emit)
 			}
@@ -74,14 +82,20 @@ func (t *Tailer) Run(ctx context.Context, emit func(LogLine)) (gh.Job, error) {
 	}
 }
 
-// step refreshes the job and fetches its log once.
-func (t *Tailer) step(ctx context.Context, job *gh.Job, emit func(LogLine)) ([]LogLine, error) {
+// step refreshes the job and, when due, fetches its log.
+func (t *Tailer) step(ctx context.Context, job *gh.Job, emit func(LogLine)) (lines []LogLine, fetched bool, err error) {
 	j, err := t.src.GetJob(ctx, t.owner, t.repo, t.jobID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	*job = j
-	return t.poll(ctx, j, emit)
+	n := t.polls
+	t.polls++
+	if j.Status != "completed" && n%runningLogEvery != 0 {
+		return nil, false, nil
+	}
+	lines, err = t.poll(ctx, j, emit)
+	return lines, true, err
 }
 
 // finalRetries is how many extra fetches a completed job gets while its log

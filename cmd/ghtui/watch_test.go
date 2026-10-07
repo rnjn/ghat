@@ -28,13 +28,11 @@ func jobJSON(id int, name, status, conclusion string) map[string]any {
 func watchScript(final string) *fakeGH {
 	return &fakeGH{
 		runs: []map[string]any{
-			runJSON("queued", ""),
 			runJSON("in_progress", ""),
 			runJSON("in_progress", ""), // unchanged poll: silent
 			runJSON("completed", final),
 		},
 		jobsSeq: [][]map[string]any{
-			{},
 			{jobJSON(1, "build", "in_progress", "")},
 			{jobJSON(1, "build", "in_progress", "")},
 			{jobJSON(1, "build", "completed", final)},
@@ -49,10 +47,9 @@ func TestWatchPrintsTransitions(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	want := strings.Join([]string{
-		ts + " run queued",
+		ts + " run in_progress", // first poll: run before jobs
 		ts + " job build in_progress",
-		ts + " run in_progress",
-		ts + " job build completed success",
+		ts + " job build completed success", // later: jobs before run
 		ts + " run completed success",
 	}, "\n") + "\n"
 	if out != want {
@@ -80,8 +77,8 @@ func TestWatchInterval(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(slept) != 3 {
-		t.Fatalf("slept %v, want 3 sleeps", slept)
+	if len(slept) != 2 {
+		t.Fatalf("slept %v, want 2 sleeps", slept)
 	}
 	for _, s := range slept {
 		if s != 2*time.Second {

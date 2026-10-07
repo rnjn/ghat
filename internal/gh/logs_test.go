@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestJobLogFollowsRedirectWithoutAuth(t *testing.T) {
@@ -74,5 +75,27 @@ func TestJobLogBlobNotFoundIsNotReady(t *testing.T) {
 	_, err := c.JobLog(context.Background(), "o", "r", 7)
 	if !errors.Is(err, ErrLogNotReady) {
 		t.Fatalf("err = %v, want ErrLogNotReady", err)
+	}
+}
+
+func TestJobLogDownloadNotCutByClientTimeout(t *testing.T) {
+	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		for i := 0; i < 3; i++ {
+			time.Sleep(60 * time.Millisecond)
+			_, _ = w.Write([]byte("line\n"))
+			w.(http.Flusher).Flush()
+		}
+	}))
+	defer blob.Close()
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, blob.URL+"/log", http.StatusFound)
+	}))
+	defer api.Close()
+	c := New("tok", WithBaseURL(api.URL), WithHTTPClient(&http.Client{Timeout: 100 * time.Millisecond}))
+	got, err := c.JobLog(context.Background(), "o", "r", 7)
+	if err != nil || string(got) != "line\nline\nline\n" {
+		t.Fatalf("got %q err %v", got, err)
 	}
 }

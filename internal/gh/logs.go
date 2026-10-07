@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // ErrLogNotReady means GitHub has no log to serve yet: either the API
@@ -47,13 +48,20 @@ func (c *Client) JobLog(ctx context.Context, owner, repo string, jobID int64) ([
 	return io.ReadAll(res.Body)
 }
 
+// blobTimeout bounds a whole log download; large logs on slow links take
+// longer than the API client's per-request timeout.
+const blobTimeout = 10 * time.Minute
+
 // fetchBlob downloads a signed log URL with no GitHub credentials attached.
 func (c *Client) fetchBlob(ctx context.Context, u string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, blobTimeout)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.http.Do(req)
+	blob := &http.Client{Transport: c.http.Transport}
+	res, err := blob.Do(req)
 	if err != nil {
 		return nil, err
 	}
