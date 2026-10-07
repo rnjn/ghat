@@ -119,16 +119,29 @@ func truncate(s string, width int) string {
 	return ansi.Truncate(s, width, "…")
 }
 
-// table renders a header and rows with left-aligned columns. The row at
-// selected gets a marker. Cells may contain ANSI styling.
+// maxColWidth caps a table column so long names cannot push later columns
+// off screen.
+const maxColWidth = 40
+
+// table renders a header and rows with left-aligned columns, each at most
+// maxColWidth wide. The row at selected gets a marker. Cells may contain
+// ANSI styling.
 func table(headers []string, rows [][]string, selected int) []string {
+	capped := make([][]string, len(rows))
+	for i, r := range rows {
+		capped[i] = make([]string, len(r))
+		for j, c := range r {
+			capped[i][j] = truncate(c, maxColWidth)
+		}
+	}
+	rows = capped
 	widths := make([]int, len(headers))
 	for i, h := range headers {
 		widths[i] = ansi.StringWidth(h)
 	}
 	for _, r := range rows {
 		for i, c := range r {
-			widths[i] = max(widths[i], ansi.StringWidth(c))
+			widths[i] = min(maxColWidth, max(widths[i], ansi.StringWidth(c)))
 		}
 	}
 	line := func(cells []string) string {

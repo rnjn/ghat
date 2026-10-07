@@ -1,7 +1,7 @@
 # ghtui
 
-A terminal UI and CLI for GitHub Actions. Slice 1 ships the CLI: `list`,
-`tail` and `watch`. The TUI comes next. Design: [docs/specs/2026-10-07-ghtui-design.md](docs/specs/2026-10-07-ghtui-design.md).
+A terminal UI and CLI for GitHub Actions: a live board of runs across your
+recently pushed repos, plus `list`, `tail` and `watch` subcommands. Design: [docs/specs/2026-10-07-ghtui-design.md](docs/specs/2026-10-07-ghtui-design.md).
 
 ## Install
 
@@ -15,6 +15,35 @@ Requires Go 1.25+.
 
 ghtui reads a token from `GH_TOKEN`, then `GITHUB_TOKEN`, then
 `gh auth token`. If none of those work, run `gh auth login`.
+
+## TUI
+
+```sh
+ghtui
+```
+
+Opens a board of every repo you pushed to in the last 14 days (plus
+`repos.pinned`, minus `repos.exclude`), with each repo's latest run,
+running count and failure count. Drill down Board → Runs → Jobs → Log.
+
+| Key | Action |
+|---|---|
+| `↑`/`k` `↓`/`j` `g` `G` `PgUp` `PgDn` | move or scroll |
+| `enter` | open the selected repo, run, job or step |
+| `esc` | back |
+| `tab` `←` `→` | switch between jobs and steps (Jobs screen) |
+| `w` | watch a run: bell and status-bar flash when it finishes |
+| `R` | refresh the current screen now |
+| `t` | toggle timestamps (log) |
+| `G` | jump to the end of the log and follow it |
+| `?` | help |
+| `q` | quit |
+
+While a job runs, the log screen shows its steps live; GitHub publishes the
+log when the job finishes, and it appears then. Polling stays well inside
+the API rate limit: runs every 15 s for repos with active runs and 60 s
+otherwise, jobs only for the run you are viewing or watching, and ETags so
+unchanged lists cost nothing. The status bar shows the remaining quota.
 
 ## Commands
 
@@ -53,8 +82,14 @@ conclusion, using the same exit codes as `tail`.
 Optional, at `~/.config/ghtui/config.yaml`:
 
 ```yaml
+repos:
+  pinned: [owner/repo]
+  exclude: [owner/archived]
+  pushed_within: 14d
 poll:
-  jobs: 5s   # watch interval
+  runs_active: 15s
+  runs_idle: 60s
+  jobs: 5s   # jobs and watch interval
   logs: 5s   # tail interval
 ui:
   show_timestamps: false
