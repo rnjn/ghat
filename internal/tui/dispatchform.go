@@ -185,7 +185,7 @@ func (f *dispatchForm) submit(ctx *Context) tea.Cmd {
 			return ActionResult{Err: err}
 		}
 		refresh("runs:" + repoKey)
-		return ActionResult{Text: text, Pop: 2}
+		return ActionResult{Text: text, From: f}
 	})
 }
 

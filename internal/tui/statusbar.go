@@ -8,6 +8,9 @@ import (
 	"ghtui/internal/poller"
 )
 
+// maxTitle keeps long screen titles from crowding out the status bar.
+const maxTitle = 32
+
 // errorTTL is how long a poll error stays in the status bar.
 const errorTTL = time.Minute
 
@@ -32,19 +35,27 @@ func (s *statusBar) observe(msg any, at time.Time) {
 	case poller.RateLimit:
 		s.rate, s.haveRate = m, true
 	case poller.PollerError:
-		s.lastErr, s.errAt = fmt.Sprintf("%s: %v", m.Resource, m.Err), at
+		if m.Resource == "action" {
+			s.lastErr = m.Err.Error()
+		} else {
+			s.lastErr = fmt.Sprintf("%s: %v", m.Resource, m.Err)
+		}
+		s.errAt = at
 	case poller.Polled, poller.ReposUpdated, poller.RunsUpdated, poller.JobsUpdated, poller.LogAppended, poller.LogComplete:
 		s.lastPoll = at
 	}
 }
 
 func (s *statusBar) view(title string, width int, now time.Time) string {
-	parts := []string{title}
+	parts := []string{truncate(title, maxTitle)}
 	if s.prompt != "" {
 		parts = append(parts, s.prompt)
 	}
 	if s.flashMsg != "" && now.Before(s.flashTo) {
 		parts = append(parts, "★ "+s.flashMsg)
+	}
+	if s.lastErr != "" && now.Sub(s.errAt) < errorTTL {
+		parts = append(parts, "✗ "+s.lastErr)
 	}
 	switch {
 	case s.haveRate && s.rate.Remaining == 0 && s.rate.Reset.After(now):
@@ -54,9 +65,6 @@ func (s *statusBar) view(title string, width int, now time.Time) string {
 	}
 	if !s.lastPoll.IsZero() {
 		parts = append(parts, "polled "+fmtAge(now.Sub(s.lastPoll))+" ago")
-	}
-	if s.lastErr != "" && now.Sub(s.errAt) < errorTTL {
-		parts = append(parts, "error "+s.lastErr)
 	}
 	line := truncate(" "+strings.Join(parts, " │ "), width)
 	if width <= 0 {

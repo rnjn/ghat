@@ -107,8 +107,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.forward(msg)
 		}
 		m.status.flash(msg.Text, now.Add(flashFor))
-		for i := 0; i < msg.Pop && len(m.stack) > 1; i++ {
-			m.pop()
+		if msg.From != nil && len(m.stack) > 1 && m.top() == msg.From {
+			m.pop() // the form that sent it
+			if _, ok := m.top().(*dispatchPicker); ok && len(m.stack) > 1 {
+				m.pop()
+			}
 		}
 		return m, m.forward(msg)
 	case tickMsg:

@@ -122,7 +122,7 @@ func TestDispatchFormSuccessPopsAndRefreshes(t *testing.T) {
 		t.Fatalf("prompt %q", c.Prompt)
 	}
 	res := c.Run().(ActionResult)
-	if res.Err != nil || res.Pop != 2 || res.Text != "dispatch requested" {
+	if res.Err != nil || res.From != f || res.Text != "dispatch requested" {
 		t.Fatalf("res %+v", res)
 	}
 	if len(rec.refreshed) != 1 || rec.refreshed[0] != "runs:acme/api" {
@@ -152,11 +152,12 @@ func TestModelPopsOnActionResultAndFormCapturesKeys(t *testing.T) {
 	if !strings.Contains(plain(m.View().Content), "qR?rxdo") {
 		t.Fatalf("typed keys not in the field:\n%s", plain(m.View().Content))
 	}
-	m, _ = update(m, ActionResult{Text: "dispatch requested", Pop: 2})
+	form := m.top()
+	m, _ = update(m, ActionResult{Text: "dispatch requested", From: form})
 	if m.top().Title() != "acme/api" {
 		t.Fatalf("after pop top = %q", m.top().Title())
 	}
-	m, _ = update(m, ActionResult{Err: errAny, Pop: 2})
+	m, _ = update(m, ActionResult{Err: errAny, From: m.top()})
 	if m.top().Title() != "acme/api" {
 		t.Fatal("popped on error")
 	}
@@ -170,4 +171,51 @@ func TestDispatchFormFitsSmallScreens(t *testing.T) {
 		t.Fatalf("focused field scrolled out:\n%s", v)
 	}
 	_ = f.View(ctx, 0, 0)
+}
+
+func TestDispatchSuccessAfterNavigatingAwayPopsNothing(t *testing.T) {
+	ctx, _, _ := actCtx(t)
+	m := NewModel(*ctx, make(chan any))
+	m, _ = update(m, tea.WindowSizeMsg{Width: 100, Height: 12})
+	m, _ = update(m, Push{Screen: NewRuns("acme/api")})
+	picker := &dispatchPicker{repoKey: "acme/api"}
+	form := newDispatchForm("acme/api", "main", formFixture())
+	m, _ = update(m, Push{Screen: picker})
+	m, _ = update(m, Push{Screen: form})
+	// request in flight; the user leaves the form and the picker, opens Jobs
+	m, _ = update(m, key("esc"))
+	m, _ = update(m, key("esc"))
+	m, _ = update(m, Push{Screen: NewJobs(run12(ctx.Store))})
+	m, _ = update(m, ActionResult{Text: "dispatch requested", From: form})
+	if !strings.HasPrefix(m.top().Title(), "acme/api #41") || len(m.stack) != 3 {
+		t.Fatalf("stack changed: top %q depth %d", m.top().Title(), len(m.stack))
+	}
+	// still on the form: closes form and picker
+	m2 := NewModel(*ctx, make(chan any))
+	m2, _ = update(m2, Push{Screen: NewRuns("acme/api")})
+	m2, _ = update(m2, Push{Screen: picker})
+	m2, _ = update(m2, Push{Screen: form})
+	m2, _ = update(m2, ActionResult{Text: "dispatch requested", From: form})
+	if m2.top().Title() != "acme/api" {
+		t.Fatalf("top %q, want back on Runs", m2.top().Title())
+	}
+}
+
+func TestStalePickerLoadIgnored(t *testing.T) {
+	ctx, _, fa := actCtx(t)
+	fa.dispatchable = sampleDispatchable()
+	old := openPicker(t, ctx, NewBoard())
+	_ = old
+	_, cmd := NewBoard().Update(key("d"), ctx)
+	var fresh Screen
+	for _, m := range runCmd(cmd) {
+		if p, ok := m.(Push); ok {
+			fresh = p.Screen
+		}
+	}
+	stale := dispatchLoaded{picker: old.(*dispatchPicker), list: nil}
+	fresh, _ = fresh.Update(stale, ctx)
+	if v := plain(fresh.View(ctx, 80, 6)); !strings.Contains(v, "loading workflows") {
+		t.Fatalf("stale load applied to a new picker:\n%s", v)
+	}
 }

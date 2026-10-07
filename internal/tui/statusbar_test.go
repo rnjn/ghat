@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"ghtui/internal/gh"
 	"ghtui/internal/poller"
 )
 
@@ -44,5 +45,17 @@ func TestStatusBarPolledAdvancesAge(t *testing.T) {
 	sb.observe(poller.Polled{}, ago(2*time.Second))
 	if got := plain(sb.view("Board", 120, testNow)); !strings.Contains(got, "polled 2s ago") {
 		t.Fatalf("status bar = %q", got)
+	}
+}
+
+func TestStatusBarKeepsPermissionGuidanceVisible(t *testing.T) {
+	var sb statusBar
+	sb.observe(poller.RateLimit{Remaining: 4321}, testNow)
+	sb.observe(poller.RunsUpdated{}, testNow)
+	err := &gh.PermissionError{Status: 403, Message: "Resource not accessible by personal access token"}
+	sb.observe(poller.PollerError{Resource: "action", Err: err}, testNow)
+	got := plain(sb.view("Dispatch Publish TraceX Release to Public Repo", 100, testNow))
+	if !strings.Contains(got, "needs repo write access") {
+		t.Fatalf("guidance cut off: %q", got)
 	}
 }

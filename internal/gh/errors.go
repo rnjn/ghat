@@ -66,5 +66,5 @@ type PermissionError struct {
 }
 
 func (e *PermissionError) Error() string {
-	return fmt.Sprintf("GitHub refused (%d %s): the token needs write access to the repository and the `workflow` scope", e.Status, e.Message)
+	return fmt.Sprintf("no permission (%d): needs repo write access and the `workflow` scope — %s", e.Status, e.Message)
 }

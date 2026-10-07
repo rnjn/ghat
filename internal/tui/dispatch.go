@@ -12,9 +12,9 @@ import (
 
 // dispatchLoaded carries the dispatchable workflows of a repo.
 type dispatchLoaded struct {
-	repoKey string
-	list    []actions.Dispatchable
-	err     error
+	picker *dispatchPicker
+	list   []actions.Dispatchable
+	err    error
 }
 
 // dispatchPicker lists the repo's workflows that can be triggered by hand.
@@ -45,7 +45,7 @@ func dispatchKey(ctx *Context, k, repoKey, ref string, prefer int64) tea.Cmd {
 	owner, repo := splitKey(repoKey)
 	load := func() tea.Msg {
 		list, err := acts.Dispatchable(context.Background(), owner, repo, ref)
-		return dispatchLoaded{repoKey: repoKey, list: list, err: err}
+		return dispatchLoaded{picker: p, list: list, err: err}
 	}
 	return tea.Batch(push(p), load)
 }
@@ -67,7 +67,7 @@ func (p *dispatchPicker) Title() string { return "Dispatch · " + p.repoKey }
 func (p *dispatchPicker) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	switch m := msg.(type) {
 	case dispatchLoaded:
-		if m.repoKey != p.repoKey {
+		if m.picker != p { // a load started by an earlier picker
 			return p, nil
 		}
 		p.loading, p.list, p.err = false, m.list, m.err

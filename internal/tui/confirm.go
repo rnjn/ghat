@@ -13,7 +13,7 @@ type Confirm struct {
 type ActionResult struct {
 	Text string
 	Err  error
-	Pop  int // screens to close on success
+	From Screen // on success, close this screen if it is still on top
 }
 
 // keyCapturer is implemented by screens that take typed text; the model
