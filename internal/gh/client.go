@@ -69,7 +69,11 @@ func (c *Client) url(path string) string {
 }
 
 func (c *Client) newRequest(ctx context.Context, path string) (*http.Request, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.url(path), nil)
+	return c.newRequestMethod(ctx, http.MethodGet, path, nil)
+}
+
+func (c *Client) newRequestMethod(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, c.url(path), body)
 	if err != nil {
 		return nil, err
 	}
