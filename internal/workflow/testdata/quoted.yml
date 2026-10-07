@@ -1,0 +1,3 @@
+name: D
+'on':
+  workflow_dispatch: {}

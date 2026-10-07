@@ -1,0 +1,23 @@
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        required: true
+        type: choice
+        options: [staging, production]
+        default: staging
+      dry_run:
+        description: Only print the plan
+        type: boolean
+        default: true
+      replicas:
+        type: number
+        default: 3
+      version:
+        description: Image tag
+        required: false
+      target:
+        type: environment
+jobs: {}

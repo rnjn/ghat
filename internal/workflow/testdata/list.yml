@@ -1,0 +1,2 @@
+name: B
+on: [push, workflow_dispatch]
