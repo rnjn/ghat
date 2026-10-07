@@ -1,0 +1,56 @@
+# A manual playground for trying ghtui against real runs: step progress,
+# annotations, failures to rerun, and long runs to cancel.
+name: Dogfood
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: How long the slow step runs
+        type: number
+        default: 60
+      outcome:
+        description: How the run ends
+        type: choice
+        options: [success, failure]
+        default: success
+      annotate:
+        description: Emit warning and error annotations
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say hello
+        run: |
+          echo "hello from ${{ github.workflow }} run ${{ github.run_number }}"
+          printf 'col1\tcol2\tcol3\n'
+      - name: Annotations
+        if: inputs.annotate
+        run: |
+          echo "::warning title=Dogfood::this is a warning annotation"
+          echo "::notice::this is a notice"
+
+  slow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        run: echo "sleeping ${{ inputs.seconds }}s in the next step"
+      - name: Slow step
+        run: |
+          for i in $(seq 1 "${{ inputs.seconds }}"); do
+            if [ $((i % 10)) -eq 0 ]; then echo "tick $i"; fi
+            sleep 1
+          done
+      - name: Finish
+        run: |
+          if [ "${{ inputs.outcome }}" = "failure" ]; then
+            echo "::error title=Dogfood::failing on purpose"
+            exit 1
+          fi
+          echo "done"
