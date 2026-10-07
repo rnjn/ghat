@@ -7,10 +7,11 @@ import (
 
 // Repo is a repository the user can access.
 type Repo struct {
-	Owner    string
-	Name     string
-	PushedAt time.Time
-	Archived bool
+	Owner         string
+	Name          string
+	PushedAt      time.Time
+	Archived      bool
+	DefaultBranch string
 }
 
 // Key returns "owner/name".
@@ -22,11 +23,12 @@ func (r *Repo) UnmarshalJSON(b []byte) error {
 		Owner    struct{ Login string } `json:"owner"`
 		PushedAt time.Time              `json:"pushed_at"`
 		Archived bool                   `json:"archived"`
+		Default  string                 `json:"default_branch"`
 	}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
 	}
-	*r = Repo{Owner: raw.Owner.Login, Name: raw.Name, PushedAt: raw.PushedAt, Archived: raw.Archived}
+	*r = Repo{Owner: raw.Owner.Login, Name: raw.Name, PushedAt: raw.PushedAt, Archived: raw.Archived, DefaultBranch: raw.Default}
 	return nil
 }
 
