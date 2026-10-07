@@ -72,3 +72,11 @@ func TestStatusBarOffline(t *testing.T) {
 		t.Fatalf("still offline after success: %q", got)
 	}
 }
+
+func TestStatusBarLowQuota(t *testing.T) {
+	var sb statusBar
+	sb.observe(poller.RateLimit{Remaining: 420, Reset: testNow.Add(time.Hour)}, testNow)
+	if got := plain(sb.view("Board", 120, testNow)); !strings.Contains(got, "quota 420 low, polling slowed") {
+		t.Fatalf("status bar = %q", got)
+	}
+}

@@ -11,6 +11,7 @@ import (
 
 const (
 	lowQuota   = 500
+	veryLow    = 100
 	maxBackoff = 2 * time.Minute
 )
 
@@ -24,9 +25,16 @@ func (p *Poller) paused(now time.Time) bool {
 	return rem == 0 && now.Before(reset)
 }
 
-// scale doubles an interval while the remaining quota is low.
+// scale stretches an interval while the remaining quota is low: ×2 below
+// 500, ×4 below 100.
 func (p *Poller) scale(d time.Duration) time.Duration {
-	if rem, _ := p.api.RateLimit(); rem >= 0 && rem < lowQuota {
+	rem, _ := p.api.RateLimit()
+	switch {
+	case rem < 0:
+		return d
+	case rem < veryLow:
+		return 4 * d
+	case rem < lowQuota:
 		return 2 * d
 	}
 	return d

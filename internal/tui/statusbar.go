@@ -65,6 +65,8 @@ func (s *statusBar) view(title string, width int, now time.Time) string {
 	switch {
 	case s.haveRate && s.rate.Remaining == 0 && s.rate.Reset.After(now):
 		parts = append(parts, "rate limited until "+s.rate.Reset.Local().Format("15:04"))
+	case s.haveRate && s.rate.Remaining < 500:
+		parts = append(parts, fmt.Sprintf("quota %d low, polling slowed", s.rate.Remaining))
 	case s.haveRate:
 		parts = append(parts, fmt.Sprintf("quota %d", s.rate.Remaining))
 	}

@@ -230,3 +230,19 @@ func TestTransientRunsFailureSendsRunsFailed(t *testing.T) {
 		t.Fatalf("got %#v, want RunsFailed for a/x", got[0])
 	}
 }
+
+func TestVeryLowQuotaQuadruplesIntervals(t *testing.T) {
+	h := newHarness(ghRepo("a", "x", time.Hour))
+	h.api.remaining = 80
+	h.api.reset = h.now.Add(30 * time.Minute)
+	h.tickAt(0)
+	h.api.takeCalls()
+	h.tickAt(239 * time.Second)
+	if n := countCalls(h.api.takeCalls(), "ListRuns"); n != 0 {
+		t.Fatal("polled before 4× interval")
+	}
+	h.tickAt(240 * time.Second)
+	if n := countCalls(h.api.takeCalls(), "ListRuns"); n != 1 {
+		t.Fatalf("ListRuns at 4× interval = %d", n)
+	}
+}
