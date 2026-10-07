@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <!-- Repository social preview: upload the PNG in Settings → General → Social preview. -->
+  <rect width="1280" height="640" fill="#0d1117"/>
+  <!-- icon tile -->
+  <g transform="translate(150 170)">
+    <rect width="300" height="300" rx="66" fill="#161b22" stroke="#30363d" stroke-width="3"/>
+    <g transform="scale(4.6875)">
+      <circle cx="17" cy="19" r="5.5" fill="#3fb950"/>
+      <rect x="27" y="16" width="25" height="6" rx="3" fill="#484f58"/>
+      <circle cx="17" cy="32" r="4" fill="none" stroke="#d29922" stroke-width="3"/>
+      <rect x="27" y="29" width="19" height="6" rx="3" fill="#8b949e"/>
+      <circle cx="17" cy="45" r="5.5" fill="#f85149"/>
+      <rect x="27" y="42" width="22" height="6" rx="3" fill="#484f58"/>
+    </g>
+  </g>
+  <!-- wordmark and tagline -->
+  <text x="530" y="300" font-family="Menlo, SF Mono, monospace" font-size="120" font-weight="700" fill="#e6edf3">ghtui</text>
+  <text x="534" y="372" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="36" fill="#a8b3bf">A terminal dashboard and CLI</text>
+  <text x="534" y="420" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="36" fill="#a8b3bf">for GitHub Actions</text>
+  <!-- status legend -->
+  <g font-family="Menlo, SF Mono, monospace" font-size="24" fill="#6e7681">
+    <circle cx="545" cy="476" r="8" fill="#3fb950"/><text x="562" y="484">passed</text>
+    <circle cx="690" cy="476" r="6.5" fill="none" stroke="#d29922" stroke-width="3.5"/><text x="707" y="484">running</text>
+    <circle cx="850" cy="476" r="8" fill="#f85149"/><text x="867" y="484">failed</text>
+  </g>
+</svg>
