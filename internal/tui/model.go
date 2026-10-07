@@ -3,11 +3,13 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
+	"ghtui/internal/poller"
 	"ghtui/internal/store"
 )
 
@@ -28,6 +30,19 @@ type Screen interface {
 // popper is implemented by screens that clean up when Esc leaves them.
 type popper interface{ OnPop(ctx *Context) }
 
+// refresher is implemented by screens whose data R can re-poll.
+type refresher interface{ Resource() string }
+
+// tickMsg re-renders once a second so ages, elapsed times and the spinner move.
+type tickMsg struct{}
+
+func tick() tea.Cmd {
+	return tea.Tick(time.Second, func(time.Time) tea.Msg { return tickMsg{} })
+}
+
+// flashFor is how long a watched run's result stays in the status bar.
+const flashFor = 5 * time.Second
+
 // Push asks the model to open a screen on top of the stack.
 type Push struct{ Screen Screen }
 
@@ -38,13 +53,14 @@ type pollerMsg struct{ msg any }
 
 // Model is the root Bubble Tea model.
 type Model struct {
-	ctx    *Context
-	msgs   <-chan any
-	stack  []Screen
-	width  int
-	height int
-	help   bool
-	status *statusBar
+	ctx     *Context
+	msgs    <-chan any
+	stack   []Screen
+	width   int
+	height  int
+	help    bool
+	status  *statusBar
+	authErr error
 }
 
 // NewModel starts on the Board and listens to msgs from the poller.
@@ -63,7 +79,7 @@ func waitFor(ch <-chan any) tea.Cmd {
 }
 
 // Init starts reading poller messages.
-func (m Model) Init() tea.Cmd { return waitFor(m.msgs) }
+func (m Model) Init() tea.Cmd { return tea.Batch(waitFor(m.msgs), tick()) }
 
 func (m Model) top() Screen { return m.stack[len(m.stack)-1] }
 
@@ -76,10 +92,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Push:
 		m.stack = append(m.stack, msg.Screen)
 		return m, nil
+	case tickMsg:
+		return m, tick()
 	case pollerMsg:
-		m.status.observe(msg.msg, m.ctx.Now())
+		now := m.ctx.Now()
+		m.status.observe(msg.msg, now)
+		var extra tea.Cmd
+		switch pm := msg.msg.(type) {
+		case poller.AuthFailed:
+			m.authErr = pm.Err
+		case poller.RunCompleted:
+			r := pm.Run
+			m.status.flash(fmt.Sprintf("%s #%d %s: %s", r.RepoKey, r.Number, r.WorkflowName, state(r.Status, r.Conclusion)), now.Add(flashFor))
+			extra = tea.Raw("\a")
+		}
 		cmd := m.forward(msg.msg)
-		return m, tea.Batch(cmd, waitFor(m.msgs))
+		return m, tea.Batch(cmd, extra, waitFor(m.msgs))
 	case tea.KeyPressMsg:
 		return m.key(msg)
 	}
@@ -91,6 +119,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if k == "ctrl+c" || k == "q" {
 		return m, tea.Quit
 	}
+	if m.authErr != nil {
+		return m, nil
+	}
 	if m.help {
 		if k == "esc" || k == "?" {
 			m.help = false
@@ -100,6 +131,11 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k {
 	case "?":
 		m.help = true
+		return m, nil
+	case "R":
+		if r, ok := m.top().(refresher); ok {
+			m.ctx.Refresh(r.Resource())
+		}
 		return m, nil
 	case "esc":
 		if len(m.stack) > 1 {
@@ -128,7 +164,9 @@ func (m Model) View() tea.View {
 	}
 	bodyH := m.height - 1
 	body := ""
-	if m.help {
+	if m.authErr != nil {
+		body = fit([]string{"", "  GitHub rejected the token. Run `gh auth login`, then restart ghtui.", "", "  " + m.authErr.Error(), "", "  q quit"}, m.width, bodyH)
+	} else if m.help {
 		body = helpView(m.width, bodyH)
 	} else {
 		body = fit(strings.Split(m.top().View(m.ctx, m.width, bodyH), "\n"), m.width, bodyH)

@@ -73,7 +73,10 @@ func TestModelQuitAndHelp(t *testing.T) {
 func TestModelReadsPollerChannel(t *testing.T) {
 	m, ch := newTestModel(t)
 	ch <- poller.RateLimit{Remaining: 77}
-	msg := m.Init()()
+	if m.Init() == nil {
+		t.Fatal("Init returned no command")
+	}
+	msg := waitFor(ch)()
 	m, cmd := update(m, msg)
 	if !strings.Contains(plain(m.View().Content), "77") {
 		t.Fatal("RateLimit not reflected in status bar")

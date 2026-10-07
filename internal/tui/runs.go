@@ -89,3 +89,6 @@ func (r *runsScreen) View(ctx *Context, width, height int) string {
 	}
 	return fit(table([]string{"STATUS", "W", "WORKFLOW", "BRANCH", "EVENT", "ACTOR", "DURATION", "RUN"}, rows, r.cur.pos-start), width, height)
 }
+
+// Resource is what R re-polls.
+func (r *runsScreen) Resource() string { return "runs:" + r.repoKey }

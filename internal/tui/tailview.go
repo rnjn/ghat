@@ -201,3 +201,6 @@ func (t *tailScreen) spinnerFooter(now time.Time) string {
 	}
 	return fmt.Sprintf(" %s %s", frame, strings.ReplaceAll(t.job.Status, "_", " "))
 }
+
+// Resource is what R re-polls.
+func (t *tailScreen) Resource() string { return fmt.Sprintf("log:%d", t.job.ID) }

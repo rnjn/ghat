@@ -18,7 +18,12 @@ type statusBar struct {
 	lastPoll time.Time
 	lastErr  string
 	errAt    time.Time
+	flashMsg string
+	flashTo  time.Time
 }
+
+// flash shows msg in place of the usual parts until until.
+func (s *statusBar) flash(msg string, until time.Time) { s.flashMsg, s.flashTo = msg, until }
 
 // observe updates the bar from a poller message received at at.
 func (s *statusBar) observe(msg any, at time.Time) {
@@ -34,6 +39,9 @@ func (s *statusBar) observe(msg any, at time.Time) {
 
 func (s *statusBar) view(title string, width int, now time.Time) string {
 	parts := []string{title}
+	if s.flashMsg != "" && now.Before(s.flashTo) {
+		parts = append(parts, "★ "+s.flashMsg)
+	}
 	switch {
 	case s.haveRate && s.rate.Remaining == 0 && s.rate.Reset.After(now):
 		parts = append(parts, "rate limited until "+s.rate.Reset.Local().Format("15:04"))

@@ -80,3 +80,6 @@ func count(n int) string {
 	}
 	return fmt.Sprint(n)
 }
+
+// Resource is what R re-polls.
+func (b *board) Resource() string { return "repos" }

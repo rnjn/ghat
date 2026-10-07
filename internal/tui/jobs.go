@@ -139,3 +139,6 @@ func (j *jobsScreen) View(ctx *Context, width, height int) string {
 	}
 	return fit(out, width, height)
 }
+
+// Resource is what R re-polls.
+func (j *jobsScreen) Resource() string { return fmt.Sprintf("jobs:%d", j.run.ID) }
