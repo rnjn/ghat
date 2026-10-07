@@ -56,6 +56,9 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if cmd := runKey(ctx, m.String(), t.job.RunID); cmd != nil {
 			return t, cmd
 		}
+		if cmd := dispatchForRun(ctx, m.String(), t.job.RunID); cmd != nil {
+			return t, cmd
+		}
 		if m.String() == "o" {
 			url := t.job.HTMLURL
 			if url == "" {

@@ -60,6 +60,9 @@ func (j *jobsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if cmd := runKey(ctx, k.String(), j.run.ID); cmd != nil {
 		return j, cmd
 	}
+	if cmd := dispatchForRun(ctx, k.String(), j.run.ID); cmd != nil {
+		return j, cmd
+	}
 	if len(jobs) == 0 {
 		if k.String() == "o" && j.run.HTMLURL != "" {
 			return j, openURL(ctx, j.run.HTMLURL)
