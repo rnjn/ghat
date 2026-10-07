@@ -35,7 +35,8 @@ func (p *Poller) syncInterest() {
 		}
 	}
 	for k := range want {
-		if !p.jobsDone[k] && !(strings.HasPrefix(k, "log:") && p.logDone) {
+		logFinished := strings.HasPrefix(k, "log:") && p.logDone
+		if !p.jobsDone[k] && !logFinished {
 			p.sched.setIfAbsent(k, time.Time{})
 		}
 	}
