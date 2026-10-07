@@ -55,7 +55,7 @@ func TestStatusBarKeepsPermissionGuidanceVisible(t *testing.T) {
 	err := &gh.PermissionError{Status: 403, Message: "Resource not accessible by personal access token"}
 	sb.observe(poller.PollerError{Resource: "action", Err: err}, testNow)
 	got := plain(sb.view("Dispatch Publish TraceX Release to Public Repo", 100, testNow))
-	if !strings.Contains(got, "needs repo write access") {
+	if !strings.Contains(got, "needs write access") {
 		t.Fatalf("guidance cut off: %q", got)
 	}
 }

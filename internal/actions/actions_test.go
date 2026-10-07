@@ -212,3 +212,17 @@ func TestDispatchableFetchesFilesConcurrentlyInOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateNumbersStrictly(t *testing.T) {
+	in := []workflow.Input{{Name: "n", Type: "number"}}
+	for _, v := range []string{"3", "-2", "2.5", "0", "-0.75"} {
+		if err := Validate(in, map[string]string{"n": v}); err != nil {
+			t.Errorf("%q rejected: %v", v, err)
+		}
+	}
+	for _, v := range []string{"NaN", "Inf", "-inf", "0x1p3", "1e5", "1_000", ".", "1."} {
+		if err := Validate(in, map[string]string{"n": v}); err == nil {
+			t.Errorf("%q accepted", v)
+		}
+	}
+}

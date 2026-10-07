@@ -45,7 +45,7 @@ running count and failure count. Drill down Board → Runs → Jobs → Log.
 
 Actions are fire-and-forget: the status bar says "… requested" and the
 next poll shows what GitHub did. They need a token with write access to the
-repository and the `workflow` scope (`gh auth refresh -s workflow`).
+repository (the `repo` scope that `gh auth login` grants is enough).
 
 While a job runs, the log screen shows its steps live; GitHub publishes the
 log when the job finishes, and it appears then. Polling stays well inside

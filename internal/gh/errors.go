@@ -59,12 +59,12 @@ func IsTransient(err error) bool {
 }
 
 // PermissionError is a 403 or 404 on a write: the token cannot act on the
-// repository (no write access, missing workflow scope, or Actions disabled).
+// repository (no write access, or Actions disabled).
 type PermissionError struct {
 	Status  int
 	Message string
 }
 
 func (e *PermissionError) Error() string {
-	return fmt.Sprintf("no permission (%d): needs repo write access and the `workflow` scope — %s", e.Status, e.Message)
+	return fmt.Sprintf("no permission (%d): the token needs write access to this repository — %s", e.Status, e.Message)
 }

@@ -85,7 +85,8 @@ func TestWritePermissionErrors(t *testing.T) {
 			t.Fatalf("%d: err = %T %v", status, err, err)
 		}
 		msg := err.Error()
-		if !strings.Contains(msg, "write access") || !strings.Contains(msg, "workflow") {
+		if !strings.Contains(msg, "no permission") || !strings.Contains(msg, "write access to this repository") ||
+			strings.Contains(msg, "workflow") || !strings.Contains(msg, "Resource not accessible") {
 			t.Fatalf("%d: message %q", status, msg)
 		}
 	}

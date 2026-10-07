@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -144,6 +144,9 @@ func cmpErr(first, err error) error {
 	return err
 }
 
+// numberRe is a plain decimal: what GitHub's number inputs accept.
+var numberRe = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
+
 // Validate checks values against the inputs' types and required flags.
 func Validate(inputs []workflow.Input, values map[string]string) error {
 	for _, in := range inputs {
@@ -164,7 +167,7 @@ func Validate(inputs []workflow.Input, values map[string]string) error {
 				return fmt.Errorf("input %q must be one of %s", in.Name, strings.Join(in.Options, ", "))
 			}
 		case "number":
-			if _, err := strconv.ParseFloat(v, 64); err != nil {
+			if !numberRe.MatchString(v) {
 				return fmt.Errorf("input %q must be a number", in.Name)
 			}
 		}
