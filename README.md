@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/icon.svg" width="112" alt="ghtui icon">
+  <img src="docs/assets/icon.svg" width="96" alt="ghtui: a status board icon">
 </p>
 
 <h1 align="center">ghtui</h1>

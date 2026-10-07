@@ -1,26 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="ghtui">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128" role="img" aria-label="ghtui">
   <title>ghtui</title>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1f2630"/>
-      <stop offset="1" stop-color="#0d1117"/>
-    </linearGradient>
-  </defs>
-  <!-- terminal window -->
-  <rect x="6" y="10" width="116" height="108" rx="16" fill="url(#bg)" stroke="#30363d" stroke-width="2"/>
-  <path d="M6 26 a16 16 0 0 1 16 -16 h84 a16 16 0 0 1 16 16 v6 H6 z" fill="#21262d"/>
-  <circle cx="22" cy="21" r="4" fill="#ff5f57"/>
-  <circle cx="36" cy="21" r="4" fill="#febc2e"/>
-  <circle cx="50" cy="21" r="4" fill="#28c840"/>
-  <!-- prompt -->
-  <path d="M20 52 l10 8 -10 8" fill="none" stroke="#8b949e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="36" y="64" width="18" height="4" rx="2" fill="#8b949e"/>
-  <!-- pipeline: success → running → failure -->
-  <path d="M30 94 H98" stroke="#30363d" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="30" cy="94" r="12" fill="#238636"/>
-  <path d="M24 94 l4 4 8 -8" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="64" cy="94" r="12" fill="#0d1117" stroke="#d29922" stroke-width="4"/>
-  <circle cx="64" cy="94" r="4" fill="#d29922"/>
-  <circle cx="98" cy="94" r="12" fill="#da3633"/>
-  <path d="M93 89 l10 10 M103 89 l-10 10" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- A status board: one row per run, led by its state (passed, running, failed). -->
+  <rect width="64" height="64" rx="14" fill="#0d1117"/>
+  <circle cx="17" cy="19" r="5.5" fill="#3fb950"/>
+  <rect x="27" y="16" width="25" height="6" rx="3" fill="#484f58"/>
+  <circle cx="17" cy="32" r="4" fill="none" stroke="#d29922" stroke-width="3"/>
+  <rect x="27" y="29" width="19" height="6" rx="3" fill="#8b949e"/>
+  <circle cx="17" cy="45" r="5.5" fill="#f85149"/>
+  <rect x="27" y="42" width="22" height="6" rx="3" fill="#484f58"/>
 </svg>
