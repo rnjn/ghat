@@ -1,0 +1,7 @@
+     JOB    DURATION                     │      STEP           DURATION
+› ●  build  3m0s                         │   ✓  Set up job     10s
+  ✗  lint   1m0s                         │   ✓  Checkout       10s
+                                         │   ●  Run make test  2m40s
+                                         │   ○  Complete job   
+                                         │ 
+                                         │ 

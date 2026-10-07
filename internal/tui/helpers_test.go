@@ -104,3 +104,25 @@ func pushed(t *testing.T, cmd tea.Cmd) Screen {
 	}
 	return p.Screen
 }
+
+// seedJobs gives run 12 two jobs: build (running, step 3 in progress)
+// and lint (done).
+func seedJobs(st *store.Store) {
+	st.SetJobs(12, []gh.Job{
+		{ID: 120, RunID: 12, Name: "build", Status: "in_progress", StartedAt: ago(3 * time.Minute), Steps: []gh.Step{
+			{Number: 1, Name: "Set up job", Status: "completed", Conclusion: "success", StartedAt: ago(3 * time.Minute), CompletedAt: ago(170 * time.Second)},
+			{Number: 2, Name: "Checkout", Status: "completed", Conclusion: "success", StartedAt: ago(170 * time.Second), CompletedAt: ago(160 * time.Second)},
+			{Number: 3, Name: "Run make test", Status: "in_progress", StartedAt: ago(160 * time.Second)},
+			{Number: 4, Name: "Complete job", Status: "pending"},
+		}},
+		{ID: 121, RunID: 12, Name: "lint", Status: "completed", Conclusion: "failure", StartedAt: ago(3 * time.Minute), CompletedAt: ago(2 * time.Minute), Steps: []gh.Step{
+			{Number: 1, Name: "Set up job", Status: "completed", Conclusion: "success", StartedAt: ago(3 * time.Minute), CompletedAt: ago(170 * time.Second)},
+			{Number: 2, Name: "Run golangci-lint", Status: "completed", Conclusion: "failure", StartedAt: ago(170 * time.Second), CompletedAt: ago(2 * time.Minute)},
+		}},
+	})
+}
+
+func run12(st *store.Store) gh.Run {
+	r, _ := st.Run(12)
+	return r
+}
