@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -8,8 +10,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"ghtui/internal/actions"
 	"ghtui/internal/gh"
 	"ghtui/internal/store"
+	"ghtui/internal/workflow"
 )
 
 var testNow = time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
@@ -43,6 +47,8 @@ func seedStore() *store.Store {
 
 type ctxRecorder struct {
 	refreshed []string
+	opened    []string
+	openErr   error
 }
 
 func testContext(st *store.Store) (*Context, *ctxRecorder) {
@@ -124,5 +130,64 @@ func seedJobs(st *store.Store) {
 
 func run12(st *store.Store) gh.Run {
 	r, _ := st.Run(12)
+	return r
+}
+
+// fakeActions records calls and returns scripted results.
+type fakeActions struct {
+	calls        []string
+	err          error
+	dispatchable []actions.Dispatchable
+	loadErr      error
+	dispatched   map[string]string
+	dispatchRef  string
+}
+
+func (f *fakeActions) Rerun(_ context.Context, run gh.Run) (string, error) {
+	f.calls = append(f.calls, fmt.Sprintf("rerun %d", run.ID))
+	return "rerun requested", f.err
+}
+
+func (f *fakeActions) Cancel(_ context.Context, run gh.Run) (string, error) {
+	f.calls = append(f.calls, fmt.Sprintf("cancel %d", run.ID))
+	return "cancel requested", f.err
+}
+
+func (f *fakeActions) Dispatchable(_ context.Context, owner, repo, ref string) ([]actions.Dispatchable, error) {
+	f.calls = append(f.calls, fmt.Sprintf("dispatchable %s/%s@%s", owner, repo, ref))
+	return f.dispatchable, f.loadErr
+}
+
+func (f *fakeActions) Dispatch(_ context.Context, owner, repo string, wf gh.Workflow, ref string, inputs []workflow.Input, values map[string]string) (string, error) {
+	f.calls = append(f.calls, fmt.Sprintf("dispatch %d %s", wf.ID, ref))
+	f.dispatched, f.dispatchRef = values, ref
+	return "dispatch requested", f.err
+}
+
+// actCtx is a context with fake actions and a recording opener.
+func actCtx(t *testing.T) (*Context, *ctxRecorder, *fakeActions) {
+	t.Helper()
+	ctx, rec := testContext(seedStore())
+	seedJobs(ctx.Store)
+	fa := &fakeActions{}
+	ctx.Actions = fa
+	ctx.Open = func(u string) error { rec.opened = append(rec.opened, u); return rec.openErr }
+	return ctx, rec, fa
+}
+
+// confirmed runs the Confirm a screen command produced, as if y was pressed.
+func confirmed(t *testing.T, cmd tea.Cmd) ActionResult {
+	t.Helper()
+	if cmd == nil {
+		t.Fatal("no command")
+	}
+	c, ok := cmd().(Confirm)
+	if !ok {
+		t.Fatal("command did not ask for confirmation")
+	}
+	r, ok := c.Run().(ActionResult)
+	if !ok {
+		t.Fatal("confirmed command did not return an ActionResult")
+	}
 	return r
 }

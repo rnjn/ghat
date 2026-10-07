@@ -54,7 +54,13 @@ func (j *jobsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	jobs := ctx.Store.Jobs(j.run.ID)
 	j.sync(jobs)
 	k, ok := msg.(tea.KeyPressMsg)
-	if !ok || len(jobs) == 0 {
+	if !ok {
+		return j, nil
+	}
+	if cmd := runKey(ctx, k.String(), j.run.ID); cmd != nil {
+		return j, cmd
+	}
+	if len(jobs) == 0 {
 		return j, nil
 	}
 	job := jobs[j.jobs.pos]

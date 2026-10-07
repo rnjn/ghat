@@ -53,6 +53,9 @@ func (r *runsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return r, nil
 	}
 	run := runs[r.cur.pos]
+	if cmd := runKey(ctx, k.String(), run.ID); cmd != nil {
+		return r, cmd
+	}
 	switch k.String() {
 	case "enter":
 		ctx.Store.SetFocusRun(run.ID)

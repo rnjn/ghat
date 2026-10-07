@@ -19,6 +19,8 @@ type Context struct {
 	Refresh        func(resource string)
 	Now            func() time.Time
 	ShowTimestamps bool // initial timestamp toggle in Tail (ui.show_timestamps)
+	Actions        Actions
+	Open           func(url string) error
 }
 
 // Screen is one level of the screen stack.

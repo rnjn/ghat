@@ -52,6 +52,9 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			t.logErr = ""
 		}
 	case tea.KeyPressMsg:
+		if cmd := runKey(ctx, m.String(), t.job.RunID); cmd != nil {
+			return t, cmd
+		}
 		t.key(m.String())
 	}
 	return t, nil
