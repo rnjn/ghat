@@ -63,6 +63,8 @@ func (r *runsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return r, push(NewJobs(run))
 	case "w":
 		ctx.Store.ToggleWatch(run.ID)
+	case "o":
+		return r, openURL(ctx, run.HTMLURL)
 	}
 	return r, nil
 }

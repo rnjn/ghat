@@ -49,6 +49,9 @@ func (b *board) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		b.remember(repos)
 		return b, nil
 	}
+	if k.String() == "o" && len(repos) > 0 {
+		return b, openURL(ctx, "https://github.com/"+repos[b.cur.pos].Repo.Key()+"/actions")
+	}
 	if k.String() == "enter" && len(repos) > 0 {
 		b.cur.clamp(len(repos))
 		return b, push(NewRuns(repos[b.cur.pos].Repo.Key()))

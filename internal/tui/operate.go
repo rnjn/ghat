@@ -56,3 +56,22 @@ func runKey(ctx *Context, k string, runID int64) tea.Cmd {
 		return ActionResult{Text: text, Err: err}
 	})
 }
+
+// openURL opens url in the browser and reports the outcome.
+func openURL(ctx *Context, url string) tea.Cmd {
+	open := ctx.Open
+	return func() tea.Msg {
+		if err := open(url); err != nil {
+			return ActionResult{Err: fmt.Errorf("open %s: %w", url, err)}
+		}
+		return ActionResult{Text: "opened in browser"}
+	}
+}
+
+// runURL is the run's page, from the store when it has one.
+func runURL(ctx *Context, runID int64) string {
+	if r, ok := ctx.Store.Run(runID); ok && r.HTMLURL != "" {
+		return r.HTMLURL
+	}
+	return ""
+}

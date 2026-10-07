@@ -35,7 +35,7 @@ func seedStore() *store.Store {
 	}, "")
 	st.SetRuns("acme/api", []gh.Run{
 		{ID: 12, RepoKey: "acme/api", Number: 41, WorkflowName: "CI", Branch: "feat/login", Event: "pull_request", Actor: "alice",
-			Status: "in_progress", CreatedAt: ago(3 * time.Minute), UpdatedAt: ago(time.Minute)},
+			Status: "in_progress", CreatedAt: ago(3 * time.Minute), UpdatedAt: ago(time.Minute), HTMLURL: "https://github.com/acme/api/actions/runs/12"},
 		{ID: 11, RepoKey: "acme/api", Number: 40, WorkflowName: "Deploy", Branch: "main", Event: "push", Actor: "alice",
 			Status: "completed", Conclusion: "success", CreatedAt: ago(2 * time.Hour), UpdatedAt: ago(110 * time.Minute)},
 		{ID: 10, RepoKey: "acme/api", Number: 39, WorkflowName: "CI", Branch: "main", Event: "push", Actor: "carol",
@@ -115,7 +115,7 @@ func pushed(t *testing.T, cmd tea.Cmd) Screen {
 // and lint (done).
 func seedJobs(st *store.Store) {
 	st.SetJobs(12, []gh.Job{
-		{ID: 120, RunID: 12, Name: "build", Status: "in_progress", StartedAt: ago(3 * time.Minute), Steps: []gh.Step{
+		{ID: 120, RunID: 12, Name: "build", Status: "in_progress", StartedAt: ago(3 * time.Minute), HTMLURL: "https://github.com/acme/api/actions/runs/12/job/120", Steps: []gh.Step{
 			{Number: 1, Name: "Set up job", Status: "completed", Conclusion: "success", StartedAt: ago(3 * time.Minute), CompletedAt: ago(170 * time.Second)},
 			{Number: 2, Name: "Checkout", Status: "completed", Conclusion: "success", StartedAt: ago(170 * time.Second), CompletedAt: ago(160 * time.Second)},
 			{Number: 3, Name: "Run make test", Status: "in_progress", StartedAt: ago(160 * time.Second)},

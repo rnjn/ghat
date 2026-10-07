@@ -61,9 +61,19 @@ func (j *jobsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return j, cmd
 	}
 	if len(jobs) == 0 {
+		if k.String() == "o" && j.run.HTMLURL != "" {
+			return j, openURL(ctx, j.run.HTMLURL)
+		}
 		return j, nil
 	}
 	job := jobs[j.jobs.pos]
+	if k.String() == "o" {
+		url := job.HTMLURL
+		if url == "" {
+			url = j.run.HTMLURL
+		}
+		return j, openURL(ctx, url)
+	}
 	switch k.String() {
 	case "tab":
 		j.stepsPane = !j.stepsPane

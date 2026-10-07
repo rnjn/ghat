@@ -88,3 +88,47 @@ func TestActionUsesLatestRunStatus(t *testing.T) {
 		t.Fatalf("res %+v calls %v", res, fa.calls)
 	}
 }
+
+func TestOpenInBrowser(t *testing.T) {
+	ctx, rec, _ := actCtx(t)
+	jobs := ctx.Store.Jobs(12)
+	noURL := jobs[1] // lint job has no HTMLURL: falls back to the run
+	for _, tc := range []struct {
+		s    Screen
+		want string
+	}{
+		{NewBoard(), "https://github.com/acme/api/actions"},
+		{NewRuns("acme/api"), "https://github.com/acme/api/actions/runs/12"},
+		{NewJobs(run12(ctx.Store)), "https://github.com/acme/api/actions/runs/12/job/120"},
+		{NewTail("acme", "api", jobs[0], 0), "https://github.com/acme/api/actions/runs/12/job/120"},
+		{NewTail("acme", "api", noURL, 0), "https://github.com/acme/api/actions/runs/12"},
+	} {
+		rec.opened = nil
+		_, cmd := tc.s.Update(key("o"), ctx)
+		if cmd == nil {
+			t.Fatalf("%s: no command", tc.s.Title())
+		}
+		if res, _ := cmd().(ActionResult); res.Err != nil {
+			t.Fatalf("%s: %v", tc.s.Title(), res.Err)
+		}
+		if len(rec.opened) != 1 || rec.opened[0] != tc.want {
+			t.Fatalf("%s: opened %v, want %s", tc.s.Title(), rec.opened, tc.want)
+		}
+	}
+}
+
+func TestOpenErrorAndEmptyList(t *testing.T) {
+	ctx, rec, _ := actCtx(t)
+	rec.openErr = errors.New("no browser")
+	_, cmd := NewRuns("acme/api").Update(key("o"), ctx)
+	if res := cmd().(ActionResult); res.Err == nil || !strings.Contains(res.Err.Error(), "no browser") {
+		t.Fatalf("res %+v", res)
+	}
+	rec.opened = nil
+	if _, cmd := NewRuns("acme/none").Update(key("o"), ctx); cmd != nil {
+		cmd()
+	}
+	if len(rec.opened) != 0 {
+		t.Fatalf("opened %v for an empty list", rec.opened)
+	}
+}

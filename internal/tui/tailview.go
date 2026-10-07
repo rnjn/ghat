@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -54,6 +55,16 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if cmd := runKey(ctx, m.String(), t.job.RunID); cmd != nil {
 			return t, cmd
+		}
+		if m.String() == "o" {
+			url := t.job.HTMLURL
+			if url == "" {
+				url = runURL(ctx, t.job.RunID)
+			}
+			if url == "" {
+				return t, fail(errors.New("no page for this job"))
+			}
+			return t, openURL(ctx, url)
 		}
 		t.key(m.String())
 	}
