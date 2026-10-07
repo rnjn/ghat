@@ -48,8 +48,8 @@ func (s *schedule) removePrefix(prefix string, keep func(key string) bool) {
 	}
 }
 
-// dueKeys returns keys due at now: repos first, then runs, jobs, logs,
-// each group in key order.
+// dueKeys returns keys due at now: repos first, then jobs and logs (what
+// the user is looking at), then runs, each group in key order.
 func (s *schedule) dueKeys(now time.Time) []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -70,7 +70,7 @@ func (s *schedule) dueKeys(now time.Time) []string {
 }
 
 func rank(key string) int {
-	for i, p := range []string{"repos", "runs:", "jobs:", "log:"} {
+	for i, p := range []string{"repos", "jobs:", "log:", "runs:"} {
 		if strings.HasPrefix(key, p) {
 			return i
 		}

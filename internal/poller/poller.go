@@ -101,12 +101,14 @@ func (p *Poller) Run(ctx context.Context) {
 // that become due during the tick (repos found by discovery), each once.
 func (p *Poller) Tick(ctx context.Context, now time.Time) {
 	defer p.reportRate()
-	p.syncInterest()
 	done := map[string]bool{}
 	for {
 		if p.paused(now) {
 			return
 		}
+		// Re-read what the user is looking at between requests: the first
+		// tick can take a while, and their screen should not wait for it.
+		p.syncInterest()
 		var key string
 		for _, k := range p.sched.dueKeys(now) {
 			if !done[k] {

@@ -34,6 +34,7 @@ type fakeAPI struct {
 	logCalls  map[int64]int
 	remaining int
 	reset     time.Time
+	onRuns    func() // called (unlocked) after each ListRuns
 }
 
 func newFake() *fakeAPI {
@@ -76,6 +77,9 @@ func (f *fakeAPI) GetRepo(_ context.Context, owner, repo string) (gh.Repo, error
 }
 
 func (f *fakeAPI) ListRuns(_ context.Context, owner, repo string, opts gh.RunsOpts, etag string) ([]gh.Run, gh.Response, error) {
+	if f.onRuns != nil {
+		defer f.onRuns()
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	k := owner + "/" + repo

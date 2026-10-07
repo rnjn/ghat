@@ -1,6 +1,7 @@
 package poller
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -122,5 +123,32 @@ func TestFocusedRunDroppedByDiscoveryStopsPolling(t *testing.T) {
 	}
 	if _, ok := h.p.sched.due["jobs:1"]; ok {
 		t.Fatal("jobs key still scheduled")
+	}
+}
+
+func TestFocusDuringLongTickIsServedBeforeRemainingRunsPolls(t *testing.T) {
+	h := started(t, "completed")
+	h.api.repos = append(h.api.repos, ghRepo("a", "y", time.Hour), ghRepo("a", "z", time.Hour))
+	h.p.Refresh("repos")
+	focused := false
+	h.api.onRuns = func() {
+		if !focused { // the user opens run 1 while the first runs poll is in flight
+			focused = true
+			h.st.SetFocusRun(1)
+		}
+	}
+	h.tickAt(time.Second)
+	calls := h.api.takeCalls()
+	jobsAt := -1
+	runsAfter := 0
+	for i, c := range calls {
+		if c == "ListJobs 1" {
+			jobsAt = i
+		} else if jobsAt >= 0 && strings.HasPrefix(c, "ListRuns") {
+			runsAfter++
+		}
+	}
+	if jobsAt < 0 || runsAfter == 0 {
+		t.Fatalf("jobs not served ahead of the queued runs polls: %v", calls)
 	}
 }
