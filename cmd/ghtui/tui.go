@@ -46,9 +46,11 @@ func runTUI(cmd *cobra.Command, d *deps, here bool) error {
 
 	st := store.New()
 	var popts []poller.Option
+	// The cache paints the board at once and supplies ETags; discovery
+	// still runs straight away, since config, --here or the account may
+	// have changed since it was saved.
 	if snap, ok := cache.Load(d.cacheDir); ok {
 		snap.Apply(st)
-		popts = append(popts, poller.WithLastDiscovery(snap.SavedAt))
 	}
 	// Cache write failures are ignored: the cache is only an optimisation.
 	saveCache := func() { _ = cache.Save(d.cacheDir, cache.FromStore(st, time.Now())) }

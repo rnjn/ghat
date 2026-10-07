@@ -99,3 +99,20 @@ func TestTailFoldedGroupKeepsGrowingHidden(t *testing.T) {
 	}
 	assertFits(t, s.View(ctx, 40, 10), 40)
 }
+
+func TestTailSurvivesShrinkingLog(t *testing.T) {
+	ctx, s := foldCtx(t)
+	s, _ = press(s, ctx, "k")
+	s = search(s, ctx, "b")
+	ctx.Store.DropLog(121)
+	ctx.Store.SetLog(121, groupedLog()[:2], true)
+	_ = s.View(ctx, 60, 12)
+	for _, k := range []string{"z", "Z", "n", "N", "j", "k", "G"} {
+		s, _ = press(s, ctx, k)
+		_ = s.View(ctx, 60, 12)
+	}
+	s = search(s, ctx, "a1")
+	if got := cursorText(t, s, ctx); got != "a1" {
+		t.Fatalf("cursor %q", got)
+	}
+}

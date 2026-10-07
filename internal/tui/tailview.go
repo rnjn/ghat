@@ -59,7 +59,7 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		}
 	case tea.KeyPressMsg:
 		lines := ctx.Store.Log(t.job.ID).Lines
-		t.ix.add(lines)
+		t.index(lines)
 		if used, cmd := t.searchKey(m, lines); used {
 			return t, cmd
 		}
@@ -176,9 +176,19 @@ func (t *tailScreen) refresh(ctx *Context) []tail.LogLine {
 		}
 	}
 	lines := ctx.Store.Log(t.job.ID).Lines
+	t.index(lines)
+	return lines
+}
+
+// index brings the fold and search indexes up to date. If the log was
+// replaced by a shorter one, everything that points into it starts over.
+func (t *tailScreen) index(lines []tail.LogLine) {
+	if len(lines) < t.ix.indexed {
+		t.ix, t.search = newLogIndex(), tailSearch{}
+		t.cur, t.offset, t.follow = 0, 0, true
+	}
 	t.ix.add(lines)
 	t.search.index(lines)
-	return lines
 }
 
 func (t *tailScreen) View(ctx *Context, width, height int) string {

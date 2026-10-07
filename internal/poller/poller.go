@@ -50,19 +50,11 @@ type Poller struct {
 	pauseUntil time.Time
 	lastRate   RateLimit
 
-	lastDiscovery  time.Time
 	afterDiscovery func()
 }
 
 // Option configures a Poller.
 type Option func(*Poller)
-
-// WithLastDiscovery says the store was filled from a cache saved at t: the
-// first discovery waits until t plus the discovery interval, and the
-// cached repos' runs are polled straight away with their ETags.
-func WithLastDiscovery(t time.Time) Option {
-	return func(p *Poller) { p.lastDiscovery = t }
-}
 
 // WithAfterDiscovery runs f (on the poller goroutine) after each successful
 // discovery; used to save the cache.
@@ -77,12 +69,6 @@ func New(api API, st *store.Store, cfg config.Config, send func(any), opts ...Op
 		o(p)
 	}
 	p.sched.set("repos", time.Time{})
-	if !p.lastDiscovery.IsZero() {
-		p.sched.set("repos", p.lastDiscovery.Add(discoveryInterval))
-		for _, r := range st.Repos() {
-			p.sched.set("runs:"+r.Repo.Key(), time.Time{})
-		}
-	}
 	return p
 }
 

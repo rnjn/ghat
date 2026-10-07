@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"runtime"
@@ -112,7 +113,7 @@ func TestTUIStartsFromCacheAndSavesOnQuit(t *testing.T) {
 		switch {
 		case strings.HasPrefix(r.URL.Path, "/user/repos"):
 			discovered = true
-			_, _ = w.Write([]byte(`[]`))
+			_, _ = fmt.Fprintf(w, `[{"name":"api","owner":{"login":"acme"},"pushed_at":%q}]`, time.Now().UTC().Format(time.RFC3339))
 		case r.URL.Path == "/repos/acme/api/actions/runs":
 			etag = r.Header.Get("If-None-Match")
 			w.WriteHeader(http.StatusNotModified)
@@ -142,8 +143,8 @@ func TestTUIStartsFromCacheAndSavesOnQuit(t *testing.T) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	if discovered || etag != `"cached-etag"` {
-		t.Fatalf("discovered=%v etag=%q: a 1-minute-old cache should skip discovery and reuse the ETag", discovered, etag)
+	if !discovered || etag != `"cached-etag"` {
+		t.Fatalf("discovered=%v etag=%q: startup must always rediscover (config, --here or account may have changed) and reuse cached ETags", discovered, etag)
 	}
 	snap, ok := cache.Load(dir)
 	if !ok || !snap.SavedAt.After(savedAt) {
