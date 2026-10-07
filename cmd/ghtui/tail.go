@@ -23,8 +23,8 @@ func newTailCmd(d *deps) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tail <run-id|job-id>",
 		Short: "Print a job's log as its steps complete",
-		Long: "Print a job's log as its steps complete. GitHub only publishes a step's\n" +
-			"output once the step finishes, so lines arrive a step at a time.\n" +
+		Long: "Print a job's log. GitHub has no streaming log API and publishes the\n" +
+			"job log when the job finishes, so tail waits and prints it then.\n" +
 			"A run ID resolves to its only job or its only in-progress job.\n" +
 			"Exit status: 0 on success, 1 on any other conclusion, 2 on error.",
 		Args: cobra.ExactArgs(1),
@@ -62,9 +62,13 @@ func newTailCmd(d *deps) *cobra.Command {
 			if noFollow {
 				return printOnce(cmd, c, owner, repo, job, emit)
 			}
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "tailing job %d %s (%s)\n", job.ID, job.Name, job.Status)
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "tailing job %d %s (%s); GitHub publishes the log when the job finishes\n", job.ID, job.Name, job.Status)
 			t := tail.NewTailer(c, owner, repo, job.ID, tail.Options{Interval: cfg.Poll.Logs.D(), Sleep: d.sleep})
 			final, err := t.Run(cmd.Context(), emit)
+			if errors.Is(err, tail.ErrLogIncomplete) {
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "ghtui:", err)
+				err = nil
+			}
 			if err != nil {
 				return err
 			}
@@ -82,7 +86,9 @@ func newTailCmd(d *deps) *cobra.Command {
 // conclusion; a running one exits 0.
 func printOnce(cmd *cobra.Command, c *gh.Client, owner, repo string, job gh.Job, emit func(tail.LogLine)) error {
 	raw, err := c.JobLog(cmd.Context(), owner, repo, job.ID)
-	if err != nil && !errors.Is(err, gh.ErrLogNotReady) {
+	if errors.Is(err, gh.ErrLogNotReady) {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "ghtui:", tail.ErrLogIncomplete)
+	} else if err != nil {
 		return err
 	}
 	for _, l := range tail.ParseLines(raw, job.Steps) {

@@ -41,20 +41,32 @@ func NewTailer(src Source, owner, repo string, jobID int64, opts Options) *Taile
 	return &Tailer{src: src, owner: owner, repo: repo, jobID: jobID, opts: opts}
 }
 
+// ErrLogIncomplete means the job completed but its full log never became
+// available: still being written, or expired.
+var ErrLogIncomplete = errors.New("log is not available (GitHub has not published it yet, or it has expired)")
+
+// maxTransient is how many consecutive 5xx or network errors a tail
+// survives before giving up.
+const maxTransient = 5
+
 // Run polls until the job completes, calling emit for every new line, and
-// returns the completed job.
+// returns the completed job. If the final log never arrives it returns the
+// job with ErrLogIncomplete.
 func (t *Tailer) Run(ctx context.Context, emit func(LogLine)) (gh.Job, error) {
+	var job gh.Job
+	failures := 0
 	for {
-		job, err := t.src.GetJob(ctx, t.owner, t.repo, t.jobID)
-		if err != nil {
-			return gh.Job{}, err
-		}
-		lines, err := t.poll(ctx, job, emit)
-		if err != nil {
+		lines, err := t.step(ctx, &job, emit)
+		switch {
+		case err == nil:
+			failures = 0
+			if job.Status == "completed" {
+				return job, t.finish(ctx, job, lines, emit)
+			}
+		case gh.IsTransient(err) && failures < maxTransient:
+			failures++
+		default:
 			return job, err
-		}
-		if job.Status == "completed" {
-			return job, t.finish(ctx, job, lines, emit)
 		}
 		if err := t.opts.Sleep(ctx, t.opts.Interval); err != nil {
 			return job, err
@@ -62,23 +74,42 @@ func (t *Tailer) Run(ctx context.Context, emit func(LogLine)) (gh.Job, error) {
 	}
 }
 
+// step refreshes the job and fetches its log once.
+func (t *Tailer) step(ctx context.Context, job *gh.Job, emit func(LogLine)) ([]LogLine, error) {
+	j, err := t.src.GetJob(ctx, t.owner, t.repo, t.jobID)
+	if err != nil {
+		return nil, err
+	}
+	*job = j
+	return t.poll(ctx, j, emit)
+}
+
 // finalRetries is how many extra fetches a completed job gets while its log
 // lags the status flip.
 const finalRetries = 3
 
 // finish refetches a completed job's log until it holds the final step's
-// output, at most finalRetries times. Running out of retries is not an error.
+// output, at most finalRetries times, then returns ErrLogIncomplete.
 func (t *Tailer) finish(ctx context.Context, job gh.Job, lines []LogLine, emit func(LogLine)) error {
-	for i := 0; i < finalRetries && !logComplete(lines, job.Steps); i++ {
+	for i := 0; i < finalRetries; i++ {
+		if logComplete(lines, job.Steps) {
+			return nil
+		}
 		if err := t.opts.Sleep(ctx, t.opts.Interval); err != nil {
 			return err
 		}
-		var err error
-		if lines, err = t.poll(ctx, job, emit); err != nil {
+		next, err := t.poll(ctx, job, emit)
+		if err != nil && !gh.IsTransient(err) {
 			return err
 		}
+		if err == nil && next != nil {
+			lines = next
+		}
 	}
-	return nil
+	if logComplete(lines, job.Steps) {
+		return nil
+	}
+	return ErrLogIncomplete
 }
 
 // logComplete reports whether a completed job's log includes output from

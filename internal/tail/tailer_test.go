@@ -169,8 +169,8 @@ func TestTailerFinalFetchGivesUpAfterThreeRetries(t *testing.T) {
 	src := &fakeSource{jobs: []gh.Job{doneWithSteps()}, logs: []logResp{{err: gh.ErrLogNotReady}}}
 	h := &harness{}
 	job, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit)
-	if err != nil || job.Status != "completed" {
-		t.Fatalf("job=%+v err=%v", job, err)
+	if !errors.Is(err, ErrLogIncomplete) || job.Status != "completed" {
+		t.Fatalf("job=%+v err=%v, want completed job and ErrLogIncomplete", job, err)
 	}
 	if src.logCalls != 4 || h.sleeps != 3 {
 		t.Fatalf("log calls %d, sleeps %d; want 4, 3", src.logCalls, h.sleeps)
@@ -185,5 +185,42 @@ func TestTailerNoRetryWhenLogAlreadyComplete(t *testing.T) {
 	}
 	if src.logCalls != 1 || h.sleeps != 0 {
 		t.Fatalf("log calls %d, sleeps %d; want 1, 0", src.logCalls, h.sleeps)
+	}
+}
+
+func TestTailerRetriesTransientErrors(t *testing.T) {
+	src := &fakeSource{
+		jobs: []gh.Job{running(), done("success")},
+		logs: []logResp{
+			{err: &gh.APIError{Status: 502}},
+			{err: errors.New("dial tcp: connection reset")},
+			logOf("a"),
+		},
+	}
+	h := &harness{}
+	job, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit)
+	if err != nil || job.Conclusion != "success" || strings.Join(h.got, ",") != "a" {
+		t.Fatalf("job=%+v err=%v emitted=%v", job, err, h.got)
+	}
+}
+
+func TestTailerGivesUpAfterRepeatedTransientErrors(t *testing.T) {
+	src := &fakeSource{jobs: []gh.Job{running()}, logs: []logResp{{err: &gh.APIError{Status: 503}}}}
+	h := &harness{}
+	_, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit)
+	var ae *gh.APIError
+	if !errors.As(err, &ae) || ae.Status != 503 {
+		t.Fatalf("err = %v", err)
+	}
+	if src.logCalls != maxTransient+1 {
+		t.Fatalf("log calls = %d, want %d", src.logCalls, maxTransient+1)
+	}
+}
+
+func TestTailerFailsFastOnClientErrors(t *testing.T) {
+	src := &fakeSource{jobs: []gh.Job{running()}, logs: []logResp{{err: &gh.APIError{Status: 403}}}}
+	h := &harness{}
+	if _, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit); err == nil || src.logCalls != 1 {
+		t.Fatalf("err = %v, log calls %d", err, src.logCalls)
 	}
 }

@@ -124,3 +124,36 @@ func TestTailBadIDExits2(t *testing.T) {
 		t.Fatalf("exit %d", exitCode(err))
 	}
 }
+
+func TestTailWarnsWhenLogNeverArrives(t *testing.T) {
+	f := &fakeGH{jobID: 12, statuses: []string{"completed"}, conc: "failure", logs: []string{""}}
+	out, stderr, err := runCLI(t, testDeps(), serve(t, f.handler(t)), "tail", "12")
+	if exitCode(err) != 1 {
+		t.Fatalf("exit %d (err %v), want conclusion exit 1", exitCode(err), err)
+	}
+	if out != "" || !strings.Contains(stderr, "log is not available") {
+		t.Fatalf("stdout %q stderr %q", out, stderr)
+	}
+}
+
+func TestTailNoFollowWarnsWhenLogMissing(t *testing.T) {
+	f := &fakeGH{jobID: 12, statuses: []string{"completed"}, conc: "success", logs: []string{""}}
+	_, stderr, err := runCLI(t, testDeps(), serve(t, f.handler(t)), "tail", "12", "--no-follow")
+	if exitCode(err) != 0 || !strings.Contains(stderr, "log is not available") {
+		t.Fatalf("exit %d stderr %q", exitCode(err), stderr)
+	}
+}
+
+func TestTailBannerAndHelpSayLogArrivesAtCompletion(t *testing.T) {
+	_, stderr, err := runCLI(t, testDeps(), serve(t, growingJob("success").handler(t)), "tail", "12")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stderr, "when the job finishes") {
+		t.Errorf("banner %q does not explain the wait", stderr)
+	}
+	help, _, _ := runCLI(t, testDeps(), nil, "tail", "--help")
+	if strings.Contains(help, "a step at a time") || !strings.Contains(help, "when the job finishes") {
+		t.Errorf("help text out of date:\n%s", help)
+	}
+}

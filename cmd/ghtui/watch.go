@@ -52,13 +52,19 @@ func newWatchCmd(d *deps) *cobra.Command {
 			if sleep == nil {
 				sleep = tail.SleepContext
 			}
+			failures := 0
 			for {
 				run, err := w.poll(cmd.Context())
-				if err != nil {
+				switch {
+				case err == nil:
+					failures = 0
+					if run.Status == "completed" {
+						return conclusionExit(run.Conclusion)
+					}
+				case gh.IsTransient(err) && failures < maxTransient:
+					failures++
+				default:
 					return err
-				}
-				if run.Status == "completed" {
-					return conclusionExit(run.Conclusion)
 				}
 				if err := sleep(cmd.Context(), interval); err != nil {
 					return err
@@ -70,6 +76,10 @@ func newWatchCmd(d *deps) *cobra.Command {
 	cmd.Flags().DurationVar(&interval, "interval", 0, "poll interval (default: config poll.jobs, 5s)")
 	return cmd
 }
+
+// maxTransient is how many consecutive 5xx or network errors a watch
+// survives before giving up.
+const maxTransient = 5
 
 // watcher remembers the last printed state of a run and its jobs.
 type watcher struct {

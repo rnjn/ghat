@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -130,6 +131,35 @@ func TestGetAPIError(t *testing.T) {
 		}
 		if ae.Status != status || ae.Message != "Not Found" {
 			t.Fatalf("status %d: got %+v", status, ae)
+		}
+	}
+}
+
+func TestGetUnauthorizedPointsToLogin(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"message":"Bad credentials"}`))
+	})
+	_, err := c.get(context.Background(), "/x", "", nil)
+	if err == nil || !strings.Contains(err.Error(), "gh auth login") || !strings.Contains(err.Error(), "GH_TOKEN") {
+		t.Fatalf("err = %v, want hint naming GH_TOKEN and gh auth login", err)
+	}
+}
+
+func TestIsTransient(t *testing.T) {
+	for err, want := range map[error]bool{
+		&APIError{Status: 500}:         true,
+		&APIError{Status: 502}:         true,
+		errors.New("connection reset"): true,
+		&APIError{Status: 404}:         false,
+		&APIError{Status: 401}:         false,
+		&RateLimitError{}:              false,
+		context.Canceled:               false,
+		context.DeadlineExceeded:       false,
+		ErrLogNotReady:                 false,
+	} {
+		if got := IsTransient(err); got != want {
+			t.Errorf("IsTransient(%v) = %v, want %v", err, got, want)
 		}
 	}
 }

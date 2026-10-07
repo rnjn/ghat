@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -93,5 +94,22 @@ func TestWatchUnknownRunExits2(t *testing.T) {
 	_, _, err := runCLI(t, testDeps(), serve(t, (&fakeGH{}).handler(t)), "watch", "9")
 	if exitCode(err) != 2 {
 		t.Fatalf("exit %d, err %v", exitCode(err), err)
+	}
+}
+
+func TestWatchRetriesTransientErrors(t *testing.T) {
+	f := watchScript("success")
+	calls := 0
+	h := f.handler(t)
+	srv := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 2 { // first ListJobs fails
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		h(w, r)
+	})
+	if _, _, err := runCLI(t, testDeps(), srv, "watch", "9"); err != nil {
+		t.Fatalf("err = %v", err)
 	}
 }
