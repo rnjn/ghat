@@ -24,17 +24,21 @@ It also exposes a small set of pipe-friendly subcommands (`list`, `tail`,
 - Go, Bubble Tea, Lip Gloss. Cobra for the CLI surface.
 - Auth is borrowed from the `gh` CLI; no token management of its own.
 - Target scale is under 20 active repos across one or two orgs.
-- GitHub has no streaming API for job logs. Tailing is poll based and
-  advances per completed step, not per line. This is a hard platform limit
-  and the design works within it rather than around it (no browser
-  WebSocket scraping).
+- GitHub has no streaming API for job logs, and (verified 2026-10-07) the
+  job log only exists once the whole job completes: for a running job the
+  logs endpoint redirects to a blob that 404s, even after several steps
+  finish. While a job runs, ghtui shows live step progress from the jobs
+  endpoint; the log appears when the job completes. This is a hard
+  platform limit and the design works within it rather than around it (no
+  browser WebSocket scraping).
 - Notification on completion is in-TUI only: list update, status-line
   flash, terminal bell. No desktop notifications in v1.
 
 ### Success criteria
 
-- `ghtui tail <job>` shows new step output within one poll interval of the
-  step finishing, and exits with the job's conclusion.
+- `ghtui tail <job>` prints the job's log within one poll interval of the
+  job finishing, and exits with the job's conclusion. While it waits, the
+  TUI shows which step is running and for how long.
 - Opening the TUI shows every active run across the user's recent repos
   within a few seconds, and stays under GitHub's rate limit indefinitely
   while idle.
@@ -102,7 +106,7 @@ LogLine    { Timestamp, Text, Kind (plain|group|endgroup|error|warning|command),
 | Repo discovery | `GET /user/repos?sort=pushed&per_page=100` | 10 min and on startup | all pages until `pushed_at` older than window |
 | Runs per repo | `GET /repos/{o}/{r}/actions/runs?per_page=30` | 15 s if any run active, else 60 s | every discovered repo |
 | Jobs for a run | `GET /repos/{o}/{r}/actions/runs/{id}/jobs` | 5 s while in progress, once on completion | selected or watched runs only |
-| Job log | `GET /repos/{o}/{r}/actions/jobs/{id}/logs` | 5 s while in progress, once on completion | job open in Tail view, or `ghtui tail` |
+| Job log | `GET /repos/{o}/{r}/actions/jobs/{id}/logs` | once the job is completed (retried while the blob lags) | job open in Tail view, or `ghtui tail` |
 | Rate limit | headers on every response | n/a | global |
 
 Rules:
@@ -124,10 +128,11 @@ Reset}`, `PollerError{Err, Resource}`.
 
 ## 5. Log tail mechanics
 
-The job logs endpoint returns a plain-text file containing all completed
-steps so far. For an in-progress job it returns the completed steps; the
-currently running step's output appears only when that step finishes. The
-run-level zip endpoint 404s until the run completes and is not used.
+The job logs endpoint 302s to a plain-text blob. For an in-progress job
+the blob does not exist yet (404), so the log is only available once the
+job completes. The algorithm below still diffs by line count, so it keeps
+working unchanged if GitHub ever serves partial logs again. The run-level
+zip endpoint 404s until the run completes and is not used.
 
 Algorithm per poll:
 
@@ -146,7 +151,8 @@ Algorithm per poll:
    emit `LogComplete`.
 
 Tail view footer always shows the running step's name and elapsed time with
-a spinner, so a quiet log never looks frozen.
+a spinner, so a quiet log never looks frozen. While the job runs, the Tail
+body shows the step list with live status instead of an empty log.
 
 ## 6. TUI
 
