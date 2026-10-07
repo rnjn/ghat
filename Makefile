@@ -6,7 +6,7 @@ build:
 	go build -o bin/ghtui ./cmd/ghtui
 
 test:
-	go test ./...
+	go test -race ./...
 
 # golangci-lint must be built with the same Go toolchain as the code.
 $(GOLANGCI_LINT):

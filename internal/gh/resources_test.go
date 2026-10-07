@@ -162,3 +162,19 @@ func TestGetJobNotFound(t *testing.T) {
 		t.Fatalf("err = %v, want 404 APIError", err)
 	}
 }
+
+func TestGetRepo(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/acme/api" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"name":"api","owner":{"login":"acme"},"pushed_at":"2026-01-02T03:04:05Z","archived":true}`))
+	})
+	r, err := c.GetRepo(context.Background(), "acme", "api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Key() != "acme/api" || !r.Archived || !r.PushedAt.Equal(time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)) {
+		t.Fatalf("repo = %+v", r)
+	}
+}

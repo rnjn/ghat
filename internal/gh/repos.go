@@ -27,3 +27,10 @@ func (c *Client) ListRepos(ctx context.Context, pushedSince time.Time) ([]Repo, 
 	}
 	return out, nil
 }
+
+// GetRepo returns a single repository.
+func (c *Client) GetRepo(ctx context.Context, owner, repo string) (Repo, error) {
+	var r Repo
+	_, err := c.get(ctx, "/repos/"+owner+"/"+repo, "", &r)
+	return r, err
+}

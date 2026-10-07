@@ -30,6 +30,7 @@ func (c *Client) JobLog(ctx context.Context, owner, repo string, jobID int64) ([
 	}
 	defer func() { _ = res.Body.Close() }()
 
+	resp := c.parseResponse(res)
 	switch {
 	case res.StatusCode == http.StatusNotFound:
 		return nil, ErrLogNotReady
@@ -40,7 +41,7 @@ func (c *Client) JobLog(ctx context.Context, owner, repo string, jobID int64) ([
 		}
 		return c.fetchBlob(ctx, loc.String())
 	}
-	if err := checkStatus(res, parseResponse(res)); err != nil {
+	if err := checkStatus(res, resp); err != nil {
 		return nil, err
 	}
 	return io.ReadAll(res.Body)

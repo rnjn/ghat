@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,10 @@ type Client struct {
 	baseURL string
 	token   string
 	http    *http.Client
+
+	mu            sync.Mutex
+	rateRemaining int
+	rateReset     time.Time
 }
 
 // Option configures a Client.
@@ -39,7 +44,7 @@ func WithHTTPClient(h *http.Client) Option {
 
 // New returns a client authenticating with token.
 func New(token string, opts ...Option) *Client {
-	c := &Client{baseURL: defaultBaseURL, token: token, http: &http.Client{Timeout: 30 * time.Second}}
+	c := &Client{baseURL: defaultBaseURL, token: token, http: &http.Client{Timeout: 30 * time.Second}, rateRemaining: -1}
 	for _, o := range opts {
 		o(c)
 	}
@@ -91,7 +96,7 @@ func (c *Client) get(ctx context.Context, path, etag string, out any) (Response,
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	resp := parseResponse(res)
+	resp := c.parseResponse(res)
 	if res.StatusCode == http.StatusNotModified {
 		resp.NotModified = true
 		if resp.ETag == "" {
@@ -108,6 +113,25 @@ func (c *Client) get(ctx context.Context, path, etag string, out any) (Response,
 		}
 	}
 	return resp, nil
+}
+
+// RateLimit returns the rate-limit state from the latest response that
+// carried it; remaining is -1 before any such response.
+func (c *Client) RateLimit() (remaining int, reset time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.rateRemaining, c.rateReset
+}
+
+// parseResponse reads response metadata and records the rate limit.
+func (c *Client) parseResponse(res *http.Response) Response {
+	resp := parseResponse(res)
+	if resp.RateRemaining >= 0 {
+		c.mu.Lock()
+		c.rateRemaining, c.rateReset = resp.RateRemaining, resp.RateReset
+		c.mu.Unlock()
+	}
+	return resp
 }
 
 func parseResponse(res *http.Response) Response {

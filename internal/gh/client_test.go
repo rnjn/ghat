@@ -163,3 +163,47 @@ func TestIsTransient(t *testing.T) {
 		}
 	}
 }
+
+func TestRateLimitTracksLatestResponse(t *testing.T) {
+	remaining := "4000"
+	status := http.StatusOK
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-RateLimit-Remaining", remaining)
+		w.Header().Set("X-RateLimit-Reset", "1760000000")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(`{}`))
+	})
+	if rem, _ := c.RateLimit(); rem != -1 {
+		t.Fatalf("before any request remaining = %d, want -1", rem)
+	}
+	if _, err := c.get(context.Background(), "/x", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	rem, reset := c.RateLimit()
+	if rem != 4000 || !reset.Equal(time.Unix(1760000000, 0)) {
+		t.Fatalf("got %d %v", rem, reset)
+	}
+	remaining, status = "12", http.StatusInternalServerError
+	_, _ = c.get(context.Background(), "/x", "", nil)
+	if rem, _ := c.RateLimit(); rem != 12 {
+		t.Fatalf("after error response remaining = %d, want 12", rem)
+	}
+}
+
+func TestRateLimitConcurrent(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-RateLimit-Remaining", "5")
+		_, _ = w.Write([]byte(`{}`))
+	})
+	done := make(chan struct{})
+	for i := 0; i < 8; i++ {
+		go func() {
+			defer func() { done <- struct{}{} }()
+			_, _ = c.get(context.Background(), "/x", "", nil)
+			_, _ = c.RateLimit()
+		}()
+	}
+	for i := 0; i < 8; i++ {
+		<-done
+	}
+}
