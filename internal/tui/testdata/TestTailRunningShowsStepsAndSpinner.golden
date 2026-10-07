@@ -1,0 +1,7 @@
+  ✓ Set up job                     10s
+  ✓ Checkout                       10s
+  ● Run make test                  2m40s
+  ○ Complete job                   
+
+  log is published when the job finishes
+ ⠋ Run make test · 2m40s
