@@ -78,6 +78,7 @@ func (s *Service) Cancel(ctx context.Context, run gh.Run) (string, error) {
 type Dispatchable struct {
 	Workflow gh.Workflow
 	Inputs   []workflow.Input
+	Err      error // the workflow file could not be parsed
 }
 
 // maxFetch bounds concurrent workflow-file requests.
@@ -126,7 +127,11 @@ func (s *Service) Dispatchable(ctx context.Context, owner, repo, ref string) ([]
 		}
 		read++
 		ok, inputs, err := workflow.ParseDispatch(results[i].file)
-		if err != nil || !ok {
+		if err != nil {
+			out = append(out, Dispatchable{Workflow: wf, Err: err})
+			continue
+		}
+		if !ok {
 			continue
 		}
 		out = append(out, Dispatchable{Workflow: wf, Inputs: inputs})

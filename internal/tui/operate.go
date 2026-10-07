@@ -46,8 +46,18 @@ func runKey(ctx *Context, k string, runID int64) tea.Cmd {
 	default:
 		verb, do = "Cancel", ctx.Actions.Cancel
 	}
-	refresh := ctx.Refresh
+	refresh, st := ctx.Refresh, ctx.Store
 	return ask(fmt.Sprintf("%s %s?", verb, label), func() tea.Msg {
+		// The run may have changed between the key press and y.
+		if latest, ok := st.Run(run.ID); ok {
+			switch {
+			case k == "r" && store.IsActive(latest.Status):
+				return ActionResult{Err: errors.New("run is still in progress")}
+			case k == "x" && latest.Status == "completed":
+				return ActionResult{Err: errors.New("run already finished")}
+			}
+			run = latest
+		}
 		text, err := do(context.Background(), run)
 		if err == nil {
 			refresh("runs:" + run.RepoKey)

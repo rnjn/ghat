@@ -78,7 +78,10 @@ func TestTUIWithoutTokenExits2BeforeStarting(t *testing.T) {
 }
 
 func TestOpenerPerOS(t *testing.T) {
-	for goos, want := range map[string]string{"darwin": "open https://x", "linux": "xdg-open https://x", "freebsd": "xdg-open https://x"} {
+	for goos, want := range map[string]string{
+		"darwin": "open https://x", "linux": "xdg-open https://x", "freebsd": "xdg-open https://x",
+		"windows": "rundll32 url.dll,FileProtocolHandler https://x",
+	} {
 		var got string
 		open := opener(goos, func(name string, args ...string) ([]byte, error) {
 			got = name + " " + strings.Join(args, " ")

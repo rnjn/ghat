@@ -40,12 +40,13 @@ func (f *field) val() string {
 
 // dispatchForm collects the ref and inputs for one workflow.
 type dispatchForm struct {
-	repoKey string
-	ref     string
-	wf      actions.Dispatchable
-	fields  []field
-	focus   int
-	err     string
+	repoKey  string
+	ref      string
+	wf       actions.Dispatchable
+	fields   []field
+	focus    int
+	err      string
+	inFlight bool // a confirmed dispatch is being sent
 }
 
 func newDispatchForm(repoKey, ref string, wf actions.Dispatchable) *dispatchForm {
@@ -110,8 +111,12 @@ func (f *dispatchForm) setFocus(i int) {
 }
 
 func (f *dispatchForm) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if r, ok := msg.(ActionResult); ok && r.Err != nil && f.inFlight {
+		f.inFlight, f.err = false, r.Err.Error()
+		return f, nil
+	}
 	k, ok := msg.(tea.KeyPressMsg)
-	if !ok {
+	if !ok || f.inFlight {
 		return f, nil
 	}
 	cur := &f.fields[f.focus]
@@ -179,14 +184,18 @@ func (f *dispatchForm) submit(ctx *Context) tea.Cmd {
 	acts, refresh := ctx.Actions, ctx.Refresh
 	owner, repo := splitKey(f.repoKey)
 	wf, inputs, repoKey := f.wf.Workflow, f.wf.Inputs, f.repoKey
-	return ask(fmt.Sprintf("Dispatch %s on %s?", wf.Name, ref), func() tea.Msg {
+	run := func() tea.Msg {
 		text, err := acts.Dispatch(context.Background(), owner, repo, wf, ref, inputs, values)
 		if err != nil {
 			return ActionResult{Err: err}
 		}
 		refresh("runs:" + repoKey)
 		return ActionResult{Text: text, From: f}
-	})
+	}
+	prompt := fmt.Sprintf("Dispatch %s on %s?", wf.Name, ref)
+	return func() tea.Msg {
+		return Confirm{Prompt: prompt, Run: run, Accepted: func() { f.inFlight = true }}
+	}
 }
 
 func (f *dispatchForm) View(ctx *Context, width, height int) string {
@@ -215,6 +224,9 @@ func (f *dispatchForm) View(ctx *Context, width, height int) string {
 		rows = append(rows, fmt.Sprintf("%s%-*s  %s", marker, labelW, fl.label, v), "    "+styleDim.Render(fl.hint))
 	}
 	foot := []string{""}
+	if f.inFlight {
+		foot = append(foot, "  "+styleWarning.Render("dispatching…"))
+	}
 	if f.err != "" {
 		foot = append(foot, "  "+styleError.Render(f.err))
 	}

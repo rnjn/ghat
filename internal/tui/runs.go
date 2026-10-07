@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -133,6 +134,9 @@ func (r *runsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	case "w":
 		ctx.Store.ToggleWatch(run.ID)
 	case "o":
+		if run.HTMLURL == "" {
+			return r, fail(errors.New("no page for this run"))
+		}
 		return r, openURL(ctx, run.HTMLURL)
 	}
 	return r, nil

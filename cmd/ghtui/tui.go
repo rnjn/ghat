@@ -73,12 +73,16 @@ func runTUI(cmd *cobra.Command, d *deps) error {
 
 // opener returns a function that opens a URL in the default browser.
 func opener(goos string, run func(name string, args ...string) ([]byte, error)) func(string) error {
-	name := "xdg-open"
-	if goos == "darwin" {
-		name = "open"
-	}
 	return func(url string) error {
-		_, err := run(name, url)
+		var err error
+		switch goos {
+		case "darwin":
+			_, err = run("open", url)
+		case "windows":
+			_, err = run("rundll32", "url.dll,FileProtocolHandler", url)
+		default:
+			_, err = run("xdg-open", url)
+		}
 		return err
 	}
 }

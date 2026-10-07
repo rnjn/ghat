@@ -123,6 +123,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch pm := msg.msg.(type) {
 		case poller.AuthFailed:
 			m.authErr = pm.Err
+			m.confirm, m.status.prompt = nil, "" // never send after the token is rejected
 		case poller.RunCompleted:
 			r := pm.Run
 			m.status.flash(fmt.Sprintf("%s #%d %s: %s", r.RepoKey, r.Number, r.WorkflowName, state(r.Status, r.Conclusion)), now.Add(flashFor))
@@ -142,10 +143,13 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	if m.confirm != nil {
-		run := m.confirm.Run
+		c := m.confirm
 		m.confirm, m.status.prompt = nil, ""
 		if k == "y" {
-			return m, run
+			if c.Accepted != nil {
+				c.Accepted()
+			}
+			return m, c.Run
 		}
 		m.status.flash("cancelled", m.ctx.Now().Add(flashFor))
 		return m, nil

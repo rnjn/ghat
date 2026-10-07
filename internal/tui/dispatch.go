@@ -82,7 +82,11 @@ func (p *dispatchPicker) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		}
 		if m.String() == "enter" && len(p.list) > 0 {
 			p.cur.clamp(len(p.list))
-			return p, push(newDispatchForm(p.repoKey, p.ref, p.list[p.cur.pos]))
+			d := p.list[p.cur.pos]
+			if d.Err != nil {
+				return p, fail(fmt.Errorf("%s cannot be dispatched: %w", d.Workflow.Path, d.Err))
+			}
+			return p, push(newDispatchForm(p.repoKey, p.ref, d))
 		}
 	}
 	return p, nil
@@ -101,6 +105,10 @@ func (p *dispatchPicker) View(ctx *Context, width, height int) string {
 	start, end := p.cur.window(len(p.list), height-len(head)-1)
 	var rows [][]string
 	for _, d := range p.list[start:end] {
+		if d.Err != nil {
+			rows = append(rows, []string{styleDim.Render(d.Workflow.Name), styleDim.Render(d.Workflow.Path), styleError.Render("error: " + d.Err.Error())})
+			continue
+		}
 		rows = append(rows, []string{d.Workflow.Name, styleDim.Render(d.Workflow.Path), fmt.Sprintf("%d inputs", len(d.Inputs))})
 	}
 	return fit(append(head, table([]string{"WORKFLOW", "FILE", ""}, rows, p.cur.pos-start)...), width, height)

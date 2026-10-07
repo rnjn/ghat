@@ -226,3 +226,14 @@ func TestValidateNumbersStrictly(t *testing.T) {
 		}
 	}
 }
+
+func TestDispatchableReportsParseErrors(t *testing.T) {
+	api := &fakeAPI{
+		workflows: []gh.Workflow{{ID: 1, Name: "Broken", Path: "b.yml", State: "active"}, {ID: 2, Name: "Ok", Path: "ok.yml", State: "active"}},
+		files:     map[string]string{"b.yml": "on: [unclosed", "ok.yml": "on: workflow_dispatch\n"},
+	}
+	got, err := New(api).Dispatchable(context.Background(), "o", "r", "main")
+	if err != nil || len(got) != 2 || got[0].Err == nil || got[1].Err != nil {
+		t.Fatalf("got %+v err %v", got, err)
+	}
+}

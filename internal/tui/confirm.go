@@ -4,8 +4,9 @@ import tea "charm.land/bubbletea/v2"
 
 // Confirm asks for a single-key y/N in the status bar before running Run.
 type Confirm struct {
-	Prompt string
-	Run    tea.Cmd
+	Prompt   string
+	Run      tea.Cmd
+	Accepted func() // optional; runs on the UI goroutine when y is pressed
 }
 
 // ActionResult reports the outcome of an action: Text on success, Err on
