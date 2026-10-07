@@ -3,6 +3,7 @@ package poller
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"ghtui/internal/gh"
@@ -62,7 +63,10 @@ func (p *Poller) failed(key string, now time.Time, interval time.Duration, err e
 	var rl *gh.RateLimitError
 	if errors.As(err, &rl) {
 		p.pauseUntil = rl.Reset
-		p.sched.set(key, rl.Reset)
+		if p.pauseUntil.IsZero() {
+			p.pauseUntil = now.Add(time.Minute) // no reset header: wait a minute
+		}
+		p.sched.set(key, p.pauseUntil)
 		p.send(PollerError{Resource: key, Err: err})
 		return
 	}
@@ -75,5 +79,9 @@ func (p *Poller) failed(key string, now time.Time, interval time.Duration, err e
 		}
 	}
 	p.sched.set(key, now.Add(delay))
+	if repoKey, ok := strings.CutPrefix(key, "runs:"); ok && gh.IsTransient(err) {
+		p.send(RunsFailed{RepoKey: repoKey, Err: err})
+		return
+	}
 	p.send(PollerError{Resource: key, Err: err})
 }

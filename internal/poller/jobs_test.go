@@ -105,3 +105,22 @@ func TestRerunOfCompletedRunPollsJobsAgain(t *testing.T) {
 		t.Fatalf("ListJobs after rerun = %d, want 1", n)
 	}
 }
+
+func TestFocusedRunDroppedByDiscoveryStopsPolling(t *testing.T) {
+	h := started(t, "in_progress")
+	h.st.SetFocusRun(1)
+	h.tickAt(time.Second)
+	h.api.repos = nil // repo falls out of the push window
+	h.p.Refresh("repos")
+	h.tickAt(2 * time.Second)
+	h.api.takeCalls()
+	for s := 3; s < 30; s++ {
+		h.tickAt(time.Duration(s) * time.Second)
+	}
+	if n := countCalls(h.api.takeCalls(), "ListJobs"); n != 0 {
+		t.Fatalf("ListJobs called %d times for an untracked run", n)
+	}
+	if _, ok := h.p.sched.due["jobs:1"]; ok {
+		t.Fatal("jobs key still scheduled")
+	}
+}

@@ -15,6 +15,13 @@ type ReposUpdated struct{}
 // status bar's "last poll" age honest.
 type Polled struct{}
 
+// RunsFailed means a repo's runs poll hit a network error or 5xx; the
+// poller is retrying and the UI keeps the last good state.
+type RunsFailed struct {
+	RepoKey string
+	Err     error
+}
+
 // RunsUpdated means a repo's runs changed.
 type RunsUpdated struct{ RepoKey string }
 

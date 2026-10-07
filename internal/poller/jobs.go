@@ -14,7 +14,8 @@ import (
 // log poll for the tail job, and drops polls nobody is looking at.
 func (p *Poller) syncInterest() {
 	want := map[string]bool{}
-	if id := p.st.FocusRun(); id != 0 {
+	tracked := func(id int64) bool { _, ok := p.st.Run(id); return ok }
+	if id := p.st.FocusRun(); id != 0 && tracked(id) {
 		want[jobsKey(id)] = true
 	}
 	for _, id := range p.st.WatchedRuns() {
@@ -30,6 +31,11 @@ func (p *Poller) syncInterest() {
 	}
 	for _, prefix := range []string{"jobs:", "log:"} {
 		p.sched.removePrefix(prefix, func(k string) bool { return want[k] })
+	}
+	for k := range p.failures {
+		if (strings.HasPrefix(k, "jobs:") || strings.HasPrefix(k, "log:")) && !want[k] {
+			delete(p.failures, k)
+		}
 	}
 	for k := range p.jobsDone {
 		// A rerun keeps the run ID; poll its jobs again once it is active.

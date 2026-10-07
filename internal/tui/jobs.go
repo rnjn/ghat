@@ -110,6 +110,9 @@ func (j *jobsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 func (j *jobsScreen) View(ctx *Context, width, height int) string {
 	jobs := ctx.Store.Jobs(j.run.ID)
 	if len(jobs) == 0 {
+		if _, ok := ctx.Store.Run(j.run.ID); !ok {
+			return fit([]string{"", "  run no longer tracked (its repo left the board)"}, width, height)
+		}
 		return fit([]string{"", "  loading jobs…"}, width, height)
 	}
 	j.sync(jobs)

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -69,5 +70,18 @@ func TestBoardKeepsSelectedRepoWhenOrderChanges(t *testing.T) {
 	_, cmd := s.Update(key("enter"), ctx)
 	if got := pushed(t, cmd).Title(); got != "acme/web" {
 		t.Fatalf("enter opened %q, want acme/web", got)
+	}
+}
+
+func TestBoardShowsLoadingUntilPolled(t *testing.T) {
+	ctx, _ := testContext(store.New())
+	ctx.Store.SetRepos([]store.RepoState{{Repo: gh.Repo{Owner: "z", Name: "fresh"}}})
+	v := plain(NewBoard().View(ctx, 80, 5))
+	if !strings.Contains(v, "loading…") || strings.Contains(v, "no runs") {
+		t.Fatalf("view:\n%s", v)
+	}
+	ctx.Store.SetRuns("z/fresh", nil, "")
+	if v := plain(NewBoard().View(ctx, 80, 5)); !strings.Contains(v, "no runs") {
+		t.Fatalf("after poll:\n%s", v)
 	}
 }

@@ -165,6 +165,11 @@ func (p *Poller) discover(ctx context.Context, now time.Time) {
 		p.st.MarkUnavailable(k, "repository not found")
 	}
 	p.sched.removePrefix("runs:", func(key string) bool { return seen[strings.TrimPrefix(key, "runs:")] })
+	for k := range p.failures {
+		if r, ok := strings.CutPrefix(k, "runs:"); ok && !seen[r] {
+			delete(p.failures, k)
+		}
+	}
 	for k := range p.polled {
 		if !seen[k] {
 			delete(p.polled, k)

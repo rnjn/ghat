@@ -179,3 +179,54 @@ func TestUnauthorizedStopsPolling(t *testing.T) {
 		t.Fatalf("AuthFailed sent %d times", n)
 	}
 }
+
+func TestRateLimitErrorWithoutResetPausesAMinute(t *testing.T) {
+	h := newHarness(ghRepo("a", "x", time.Hour))
+	h.api.reposErr = &gh.RateLimitError{}
+	h.tickAt(0)
+	h.api.reposErr = nil
+	h.api.takeCalls()
+	h.p.Refresh("repos")
+	h.tickAt(59 * time.Second)
+	if calls := h.api.takeCalls(); len(calls) != 0 {
+		t.Fatalf("calls while paused: %v", calls)
+	}
+	h.tickAt(60 * time.Second)
+	if n := countCalls(h.api.takeCalls(), "ListRepos"); n != 1 {
+		t.Fatal("did not resume after 60s")
+	}
+}
+
+func TestBackoffEntriesDroppedWithTheirKeys(t *testing.T) {
+	h := started(t, "in_progress")
+	h.st.SetFocusRun(1)
+	h.api.jobsErr[1] = &gh.APIError{Status: 502}
+	h.tickAt(time.Second)
+	if h.p.failures["jobs:1"] == 0 {
+		t.Fatal("no failure recorded")
+	}
+	h.st.SetFocusRun(0)
+	h.tickAt(2 * time.Second)
+	if _, ok := h.p.failures["jobs:1"]; ok {
+		t.Fatal("failures entry kept after the key was dropped")
+	}
+}
+
+func TestTransientRunsFailureSendsRunsFailed(t *testing.T) {
+	h := newHarness(ghRepo("a", "x", time.Hour))
+	h.api.runsErr["a/x"] = &gh.APIError{Status: 503}
+	h.tickAt(0)
+	var got []any
+	for _, m := range h.takeMsgs() {
+		switch m.(type) {
+		case RunsFailed, PollerError:
+			got = append(got, m)
+		}
+	}
+	if len(got) != 1 {
+		t.Fatalf("msgs %#v", got)
+	}
+	if rf, ok := got[0].(RunsFailed); !ok || rf.RepoKey != "a/x" {
+		t.Fatalf("got %#v, want RunsFailed for a/x", got[0])
+	}
+}

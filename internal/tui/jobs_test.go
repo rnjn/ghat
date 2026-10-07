@@ -113,3 +113,11 @@ func TestJobsTailInheritsShowTimestamps(t *testing.T) {
 		t.Fatal("ui.show_timestamps not applied to Tail")
 	}
 }
+
+func TestJobsRunNoLongerTracked(t *testing.T) {
+	ctx, s := jobsCtx(t)
+	ctx.Store.SetRepos(nil)
+	if v := plain(s.View(ctx, 80, 5)); !strings.Contains(v, "run no longer tracked") {
+		t.Fatalf("view:\n%s", v)
+	}
+}

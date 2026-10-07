@@ -59,3 +59,16 @@ func TestStatusBarKeepsPermissionGuidanceVisible(t *testing.T) {
 		t.Fatalf("guidance cut off: %q", got)
 	}
 }
+
+func TestStatusBarOffline(t *testing.T) {
+	var sb statusBar
+	sb.observe(poller.Polled{}, ago(40*time.Second))
+	sb.observe(poller.RunsFailed{RepoKey: "a/x", Err: errAny}, ago(time.Second))
+	if got := plain(sb.view("Board", 120, testNow)); !strings.Contains(got, "offline, retrying (data 40s old)") {
+		t.Fatalf("status bar = %q", got)
+	}
+	sb.observe(poller.Polled{}, testNow)
+	if got := plain(sb.view("Board", 120, testNow)); strings.Contains(got, "offline") {
+		t.Fatalf("still offline after success: %q", got)
+	}
+}

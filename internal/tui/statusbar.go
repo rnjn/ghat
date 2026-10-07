@@ -24,6 +24,7 @@ type statusBar struct {
 	flashMsg string
 	flashTo  time.Time
 	prompt   string
+	offline  bool
 }
 
 // flash shows msg in place of the usual parts until until.
@@ -41,7 +42,11 @@ func (s *statusBar) observe(msg any, at time.Time) {
 			s.lastErr = fmt.Sprintf("%s: %v", m.Resource, m.Err)
 		}
 		s.errAt = at
-	case poller.Polled, poller.ReposUpdated, poller.RunsUpdated, poller.JobsUpdated, poller.LogAppended, poller.LogComplete:
+	case poller.RunsFailed:
+		s.offline = true
+	case poller.Polled:
+		s.lastPoll, s.offline = at, false
+	case poller.ReposUpdated, poller.RunsUpdated, poller.JobsUpdated, poller.LogAppended, poller.LogComplete:
 		s.lastPoll = at
 	}
 }
@@ -63,7 +68,12 @@ func (s *statusBar) view(title string, width int, now time.Time) string {
 	case s.haveRate:
 		parts = append(parts, fmt.Sprintf("quota %d", s.rate.Remaining))
 	}
-	if !s.lastPoll.IsZero() {
+	switch {
+	case s.offline && !s.lastPoll.IsZero():
+		parts = append(parts, "offline, retrying (data "+fmtAge(now.Sub(s.lastPoll))+" old)")
+	case s.offline:
+		parts = append(parts, "offline, retrying")
+	case !s.lastPoll.IsZero():
 		parts = append(parts, "polled "+fmtAge(now.Sub(s.lastPoll))+" ago")
 	}
 	line := truncate(" "+strings.Join(parts, " │ "), width)

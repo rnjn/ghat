@@ -17,6 +17,7 @@ type RepoState struct {
 	Unavailable bool
 	RunsETag    string
 	LastError   string
+	Polled      bool // runs fetched at least once
 }
 
 // Store is the in-memory model shared by poller (writer) and TUI (reader).
@@ -52,8 +53,11 @@ func (s *Store) SetRepos(repos []RepoState) {
 	next := make(map[string]RepoState, len(repos))
 	for _, r := range repos {
 		k := r.Repo.Key()
-		if old, ok := s.repos[k]; ok && r.RunsETag == "" {
-			r.RunsETag = old.RunsETag
+		if old, ok := s.repos[k]; ok {
+			if r.RunsETag == "" {
+				r.RunsETag = old.RunsETag
+			}
+			r.Polled = r.Polled || old.Polled
 		}
 		r.Unavailable, r.LastError = false, ""
 		next[k] = r
@@ -129,7 +133,7 @@ func (s *Store) SetRuns(repoKey string, runs []gh.Run, etag string) (completedWa
 	}
 	s.runs[repoKey] = sorted
 	if rs, ok := s.repos[repoKey]; ok {
-		rs.RunsETag = etag
+		rs.RunsETag, rs.Polled = etag, true
 		s.repos[repoKey] = rs
 	}
 	return completedWatched

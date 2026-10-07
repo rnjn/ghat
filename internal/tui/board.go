@@ -83,6 +83,9 @@ func boardRow(st *store.Store, r store.RepoState, now time.Time) []string {
 		return []string{styleWarning.Render("!"), styleDim.Render(key), styleDim.Render(r.LastError), "", "", "", ""}
 	}
 	runs := st.Runs(key)
+	if len(runs) == 0 && !r.Polled {
+		return []string{styleDim.Render("·"), key, styleDim.Render("loading…"), "", "", "", ""}
+	}
 	if len(runs) == 0 {
 		return []string{styleDim.Render("·"), key, styleDim.Render("no runs"), "", "", "", ""}
 	}

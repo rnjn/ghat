@@ -143,3 +143,19 @@ func TestConcurrentAccess(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestPolledSetBySetRunsAndKeptAcrossRediscovery(t *testing.T) {
+	s := New()
+	s.SetRepos([]RepoState{repo("a", "x", 0)})
+	if r, _ := s.Repo("a/x"); r.Polled {
+		t.Fatal("polled before any runs poll")
+	}
+	s.SetRuns("a/x", nil, "")
+	if r, _ := s.Repo("a/x"); !r.Polled {
+		t.Fatal("SetRuns did not mark polled")
+	}
+	s.SetRepos([]RepoState{repo("a", "x", 0)})
+	if r, _ := s.Repo("a/x"); !r.Polled {
+		t.Fatal("rediscovery lost the polled flag")
+	}
+}
