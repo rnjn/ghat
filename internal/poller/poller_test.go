@@ -196,3 +196,16 @@ func TestAfterDiscoveryHook(t *testing.T) {
 		t.Fatalf("hook ran %d times, want 2", n)
 	}
 }
+
+func TestRunsPerRepoFromConfig(t *testing.T) {
+	for _, n := range []int{50, 100} {
+		h := newHarness(ghRepo("a", "x", time.Hour))
+		cfg := config.Default()
+		cfg.Poll.RunsPerRepo = n
+		h.p = New(h.api, h.st, cfg, func(any) {})
+		h.tickAt(0)
+		if h.api.runsOpts.PerPage != n {
+			t.Fatalf("per_page = %d, want %d", h.api.runsOpts.PerPage, n)
+		}
+	}
+}

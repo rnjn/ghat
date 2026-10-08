@@ -24,10 +24,7 @@ type API interface {
 	RateLimit() (remaining int, reset time.Time)
 }
 
-const (
-	discoveryInterval = 10 * time.Minute
-	runsPerPage       = 30
-)
+const discoveryInterval = 10 * time.Minute
 
 // Poller schedules GitHub calls. Tick does all due work synchronously, so
 // tests drive it with explicit times; Run drives it with a real ticker.
@@ -214,7 +211,7 @@ func (p *Poller) pollRuns(ctx context.Context, now time.Time, repoKey string) {
 		p.sched.remove(key)
 		return
 	}
-	runs, resp, err := p.api.ListRuns(ctx, rs.Repo.Owner, rs.Repo.Name, gh.RunsOpts{PerPage: runsPerPage}, rs.RunsETag)
+	runs, resp, err := p.api.ListRuns(ctx, rs.Repo.Owner, rs.Repo.Name, gh.RunsOpts{PerPage: p.runsPerRepo()}, rs.RunsETag)
 	var ae *gh.APIError
 	switch {
 	case errors.As(err, &ae) && (ae.Status == http.StatusNotFound || ae.Status == http.StatusForbidden):
@@ -261,4 +258,12 @@ func (p *Poller) nextRuns(now time.Time, repoKey string, first bool) time.Time {
 	slices.Sort(keys)
 	i := slices.Index(keys, repoKey)
 	return now.Add(interval * time.Duration(i+1) / time.Duration(len(keys)))
+}
+
+// runsPerRepo is the configured number of runs to fetch per repo.
+func (p *Poller) runsPerRepo() int {
+	if n := p.cfg.Poll.RunsPerRepo; n > 0 {
+		return n
+	}
+	return 50
 }

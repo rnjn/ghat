@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -93,5 +94,21 @@ func TestLoadFallsBackToLegacyGhtuiConfig(t *testing.T) {
 	c, err := Load(filepath.Join(dir, "ghat", "config.yaml"))
 	if err != nil || c.Poll.Logs.D() != 2*time.Second {
 		t.Fatalf("legacy config not used: %+v %v", c.Poll, err)
+	}
+}
+
+func TestRunsPerRepo(t *testing.T) {
+	c, err := Load(filepath.Join(t.TempDir(), "none.yaml"))
+	if err != nil || c.Poll.RunsPerRepo != 50 {
+		t.Fatalf("default = %d (err %v), want 50", c.Poll.RunsPerRepo, err)
+	}
+	c, err = Load(writeFile(t, "poll:\n  runs_per_repo: 100\n"))
+	if err != nil || c.Poll.RunsPerRepo != 100 {
+		t.Fatalf("override = %d (err %v)", c.Poll.RunsPerRepo, err)
+	}
+	for _, bad := range []string{"0", "101", "-5"} {
+		if _, err := Load(writeFile(t, "poll:\n  runs_per_repo: "+bad+"\n")); err == nil || !strings.Contains(err.Error(), "runs_per_repo") {
+			t.Errorf("%s: err = %v, want a runs_per_repo error", bad, err)
+		}
 	}
 }

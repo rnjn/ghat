@@ -56,6 +56,9 @@ type Config struct {
 		RunsIdle   Duration `yaml:"runs_idle"`
 		Jobs       Duration `yaml:"jobs"`
 		Logs       Duration `yaml:"logs"`
+		// RunsPerRepo is how many recent runs the TUI shows per repo
+		// (1–100, GitHub's page size limit).
+		RunsPerRepo int `yaml:"runs_per_repo"`
 	} `yaml:"poll"`
 	UI struct {
 		ShowTimestamps bool `yaml:"show_timestamps"`
@@ -70,6 +73,7 @@ func Default() Config {
 	c.Poll.RunsIdle = Duration(60 * time.Second)
 	c.Poll.Jobs = Duration(5 * time.Second)
 	c.Poll.Logs = Duration(5 * time.Second)
+	c.Poll.RunsPerRepo = 50
 	return c
 }
 
@@ -105,6 +109,9 @@ func Load(path string) (Config, error) {
 	}
 	if err := yaml.Unmarshal(b, &c); err != nil {
 		return c, fmt.Errorf("%s: %w", path, err)
+	}
+	if n := c.Poll.RunsPerRepo; n < 1 || n > 100 {
+		return c, fmt.Errorf("%s: poll.runs_per_repo must be between 1 and 100, got %d", path, n)
 	}
 	return c, nil
 }

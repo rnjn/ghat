@@ -152,6 +152,7 @@ poll:
   runs_idle: 60s
   jobs: 5s                   # the run you are viewing or watching
   logs: 5s                   # ghat tail
+  runs_per_repo: 50          # runs shown per repo in the TUI (1–100)
 ui:
   show_timestamps: false
 ```
