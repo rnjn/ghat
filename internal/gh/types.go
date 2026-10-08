@@ -2,6 +2,7 @@ package gh
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -47,6 +48,27 @@ type Run struct {
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	HTMLURL      string    `json:"html_url"`
+	// HeadSHA is the commit the run ran on; CommitMessage is the first line
+	// of its message.
+	HeadSHA       string `json:"head_sha"`
+	CommitMessage string `json:"commit_message"`
+	CommitAuthor  string `json:"commit_author"`
+}
+
+// ShortSHA is the 7-character commit ID, or "" without a commit.
+func (r Run) ShortSHA() string {
+	if len(r.HeadSHA) < 7 {
+		return r.HeadSHA
+	}
+	return r.HeadSHA[:7]
+}
+
+// CommitURL is the commit's diff page on GitHub, or "" without a commit.
+func (r Run) CommitURL() string {
+	if r.HeadSHA == "" || r.RepoKey == "" {
+		return ""
+	}
+	return "https://github.com/" + r.RepoKey + "/commit/" + r.HeadSHA
 }
 
 func (r *Run) UnmarshalJSON(b []byte) error {
@@ -63,7 +85,12 @@ func (r *Run) UnmarshalJSON(b []byte) error {
 		UpdatedAt  time.Time              `json:"updated_at"`
 		HTMLURL    string                 `json:"html_url"`
 		Actor      struct{ Login string } `json:"actor"`
-		Repository Repo                   `json:"repository"`
+		HeadSHA    string                 `json:"head_sha"`
+		HeadCommit *struct {
+			Message string
+			Author  struct{ Name string }
+		} `json:"head_commit"`
+		Repository Repo `json:"repository"`
 	}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return err
@@ -73,7 +100,14 @@ func (r *Run) UnmarshalJSON(b []byte) error {
 		Branch: raw.HeadBranch, Event: raw.Event, Actor: raw.Actor.Login,
 		Status: raw.Status, Conclusion: raw.Conclusion,
 		CreatedAt: raw.CreatedAt, UpdatedAt: raw.UpdatedAt, HTMLURL: raw.HTMLURL,
-		RepoKey: raw.Repository.Key(),
+		RepoKey: raw.Repository.Key(), HeadSHA: raw.HeadSHA,
+	}
+	if c := raw.HeadCommit; c != nil {
+		r.CommitMessage, _, _ = strings.Cut(c.Message, "\n")
+		r.CommitAuthor = c.Author.Name
+	}
+	if r.RepoKey == "/" {
+		r.RepoKey = ""
 	}
 	return nil
 }

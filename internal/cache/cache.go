@@ -41,6 +41,7 @@ type runRec struct {
 	Number                                              int
 	RepoKey, WorkflowName, Branch, Event, Actor, Status string
 	Conclusion, HTMLURL                                 string
+	HeadSHA, CommitMessage, CommitAuthor                string
 	CreatedAt, UpdatedAt                                time.Time
 }
 
@@ -71,6 +72,7 @@ func FromStore(st *store.Store, now time.Time) Snapshot {
 				WorkflowName: run.WorkflowName, Branch: run.Branch, Event: run.Event, Actor: run.Actor,
 				Status: run.Status, Conclusion: run.Conclusion, HTMLURL: run.HTMLURL,
 				CreatedAt: run.CreatedAt, UpdatedAt: run.UpdatedAt,
+				HeadSHA: run.HeadSHA, CommitMessage: run.CommitMessage, CommitAuthor: run.CommitAuthor,
 			})
 		}
 		s.Runs[r.Repo.Key()] = recs
@@ -100,6 +102,7 @@ func (s Snapshot) Apply(st *store.Store) {
 				WorkflowName: x.WorkflowName, Branch: x.Branch, Event: x.Event, Actor: x.Actor,
 				Status: x.Status, Conclusion: x.Conclusion, HTMLURL: x.HTMLURL,
 				CreatedAt: x.CreatedAt, UpdatedAt: x.UpdatedAt,
+				HeadSHA: x.HeadSHA, CommitMessage: x.CommitMessage, CommitAuthor: x.CommitAuthor,
 			}
 		}
 		st.SetRuns(r.Repo.Key(), runs, r.RunsETag)

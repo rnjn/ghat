@@ -126,6 +126,9 @@ func (r *runsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if cmd := dispatchForRun(ctx, k.String(), run.ID); cmd != nil {
 		return r, cmd
 	}
+	if cmd := commitKey(ctx, k.String(), run.ID); cmd != nil {
+		return r, cmd
+	}
 	switch k.String() {
 	case "enter":
 		ctx.Store.SetFocusRun(run.ID)
@@ -169,12 +172,15 @@ func (r *runsScreen) View(ctx *Context, width, height int) string {
 		if run.Status != "completed" {
 			end = now
 		}
+		// Short, key columns first, so a narrow terminal cuts event and
+		// actor rather than the run number, commit or duration.
 		rows = append(rows, []string{
 			glyph(run.Status, run.Conclusion) + " " + state(run.Status, run.Conclusion), watch,
-			run.WorkflowName, run.Branch, run.Event, run.Actor, fmtDur(span(run.CreatedAt, end, now)), fmt.Sprintf("#%d", run.Number),
+			fmt.Sprintf("#%d", run.Number), hyperlink(run.CommitURL(), run.ShortSHA()),
+			fmtDur(span(run.CreatedAt, end, now)), run.WorkflowName, run.Branch, run.Event, run.Actor,
 		})
 	}
-	return fit(append(head, table([]string{"STATUS", "W", "WORKFLOW", "BRANCH", "EVENT", "ACTOR", "DURATION", "RUN"}, rows, r.cur.pos-start)...), width, height+len(head))
+	return fit(append(head, table([]string{"STATUS", "W", "RUN", "COMMIT", "DURATION", "WORKFLOW", "BRANCH", "EVENT", "ACTOR"}, rows, r.cur.pos-start)...), width, height+len(head))
 }
 
 // Resource is what R re-polls.

@@ -85,3 +85,15 @@ func runURL(ctx *Context, runID int64) string {
 	}
 	return ""
 }
+
+// commitKey opens the commit of run runID on c, or reports that it has none.
+func commitKey(ctx *Context, k string, runID int64) tea.Cmd {
+	if k != "c" {
+		return nil
+	}
+	run, ok := ctx.Store.Run(runID)
+	if !ok || run.CommitURL() == "" {
+		return fail(errors.New("no commit for this run"))
+	}
+	return openURL(ctx, run.CommitURL())
+}

@@ -21,7 +21,8 @@ func seeded() *store.Store {
 	})
 	st.SetRuns("acme/api", []gh.Run{
 		{ID: 2, RepoKey: "acme/api", Number: 9, WorkflowName: "CI", WorkflowID: 5, Branch: "main", Event: "push", Actor: "al",
-			Status: "completed", Conclusion: "success", CreatedAt: now.Add(-time.Minute), UpdatedAt: now, HTMLURL: "https://x/2"},
+			Status: "completed", Conclusion: "success", CreatedAt: now.Add(-time.Minute), UpdatedAt: now, HTMLURL: "https://x/2",
+			HeadSHA: "abc1234def", CommitMessage: "Fix it", CommitAuthor: "Ada"},
 		{ID: 1, RepoKey: "acme/api", Number: 8, Status: "completed", Conclusion: "failure", CreatedAt: now.Add(-time.Hour)},
 	}, `"etag-api"`)
 	st.SetRuns("acme/empty", nil, `"etag-empty"`)
@@ -45,7 +46,8 @@ func TestRoundTrip(t *testing.T) {
 	}
 	runs := st.Runs("acme/api")
 	if len(runs) != 2 || runs[0].ID != 2 || runs[0].WorkflowName != "CI" || runs[0].Conclusion != "success" ||
-		runs[0].HTMLURL != "https://x/2" || runs[0].WorkflowID != 5 || !runs[0].UpdatedAt.Equal(now) {
+		runs[0].HTMLURL != "https://x/2" || runs[0].WorkflowID != 5 || !runs[0].UpdatedAt.Equal(now) ||
+		runs[0].HeadSHA != "abc1234def" || runs[0].CommitMessage != "Fix it" || runs[0].CommitAuthor != "Ada" {
 		t.Fatalf("runs = %+v", runs)
 	}
 	if e, _ := st.Repo("acme/empty"); !e.Polled || e.RunsETag != `"etag-empty"` {

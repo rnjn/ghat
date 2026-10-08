@@ -2,6 +2,7 @@ package gh
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -176,5 +177,26 @@ func TestGetRepo(t *testing.T) {
 	}
 	if r.Key() != "acme/api" || !r.Archived || !r.PushedAt.Equal(time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)) {
 		t.Fatalf("repo = %+v", r)
+	}
+}
+
+func TestRunDecodesCommit(t *testing.T) {
+	var r Run
+	err := json.Unmarshal([]byte(`{"id":1,"head_sha":"e2c23169990b8371552642850ff1daba1408ef01",
+		"head_commit":{"id":"e2c23169990b8371552642850ff1daba1408ef01","message":"Fix the thing\n\nLonger body","author":{"name":"Ada"}},
+		"repository":{"name":"r","owner":{"login":"o"}}}`), &r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.HeadSHA != "e2c23169990b8371552642850ff1daba1408ef01" || r.CommitMessage != "Fix the thing" || r.CommitAuthor != "Ada" {
+		t.Fatalf("run = %+v", r)
+	}
+	if r.CommitURL() != "https://github.com/o/r/commit/e2c23169990b8371552642850ff1daba1408ef01" || r.ShortSHA() != "e2c2316" {
+		t.Fatalf("url %q short %q", r.CommitURL(), r.ShortSHA())
+	}
+	var bare Run
+	_ = json.Unmarshal([]byte(`{"id":2,"head_commit":null}`), &bare)
+	if bare.CommitURL() != "" || bare.ShortSHA() != "" {
+		t.Fatalf("run without a commit: url %q short %q", bare.CommitURL(), bare.ShortSHA())
 	}
 }

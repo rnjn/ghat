@@ -35,7 +35,8 @@ func seedStore() *store.Store {
 	}, "")
 	st.SetRuns("acme/api", []gh.Run{
 		{ID: 12, RepoKey: "acme/api", Number: 41, WorkflowName: "CI", Branch: "feat/login", Event: "pull_request", Actor: "alice",
-			Status: "in_progress", CreatedAt: ago(3 * time.Minute), UpdatedAt: ago(time.Minute), HTMLURL: "https://github.com/acme/api/actions/runs/12"},
+			Status: "in_progress", CreatedAt: ago(3 * time.Minute), UpdatedAt: ago(time.Minute), HTMLURL: "https://github.com/acme/api/actions/runs/12",
+			HeadSHA: "abc1234ffff0000", CommitMessage: "Add login form", CommitAuthor: "Alice"},
 		{ID: 11, RepoKey: "acme/api", Number: 40, WorkflowName: "Deploy", Branch: "main", Event: "push", Actor: "alice",
 			Status: "completed", Conclusion: "success", CreatedAt: ago(2 * time.Hour), UpdatedAt: ago(110 * time.Minute)},
 		{ID: 10, RepoKey: "acme/api", Number: 39, WorkflowName: "CI", Branch: "main", Event: "push", Actor: "carol",

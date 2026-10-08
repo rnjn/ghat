@@ -118,3 +118,16 @@ func TestListBadRepoArgExits2(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestListShowsCommit(t *testing.T) {
+	body := strings.Replace(runsBody, `"head_branch":"main"`, `"head_branch":"main","head_sha":"e2c23169990b8371","head_commit":{"message":"Fix it\nbody","author":{"name":"Ada"}}`, 1)
+	srv := serve(t, func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(body)) })
+	out, _, err := runCLI(t, testDeps(), srv, "list")
+	if err != nil || !strings.Contains(out, "COMMIT") || !strings.Contains(out, "e2c2316") {
+		t.Fatalf("err %v out:\n%s", err, out)
+	}
+	out, _, _ = runCLI(t, testDeps(), srv, "list", "--json")
+	if !strings.Contains(out, `"head_sha":"e2c23169990b8371"`) || !strings.Contains(out, `"commit_message":"Fix it"`) {
+		t.Fatalf("json:\n%s", out)
+	}
+}

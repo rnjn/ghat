@@ -190,6 +190,9 @@ func (j *jobsScreen) Stats(ctx *Context) []string {
 		}
 	}
 	line2 := fmt.Sprintf("jobs %d/%d done · %d failed", done, len(jobs), failed)
+	if sha := run.ShortSHA(); sha != "" {
+		line2 = hyperlink(run.CommitURL(), sha) + " " + run.CommitMessage + " · " + line2
+	}
 	if running != "" {
 		line2 += " · " + running
 	}

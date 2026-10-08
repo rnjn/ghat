@@ -33,10 +33,10 @@ func runDuration(r gh.Run, now time.Time) time.Duration {
 
 func writeRunsTable(w io.Writer, runs []gh.Run, now time.Time) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "STATUS\tWORKFLOW\tBRANCH\tEVENT\tACTOR\tDURATION\tRUN\tID")
+	_, _ = fmt.Fprintln(tw, "STATUS\tWORKFLOW\tBRANCH\tEVENT\tACTOR\tDURATION\tRUN\tID\tCOMMIT")
 	for _, r := range runs {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t#%d\t%d\n",
-			runState(r), r.WorkflowName, r.Branch, r.Event, r.Actor, runDuration(r, now), r.Number, r.ID)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t#%d\t%d\t%s\n",
+			runState(r), r.WorkflowName, r.Branch, r.Event, r.Actor, runDuration(r, now), r.Number, r.ID, r.ShortSHA())
 	}
 	return tw.Flush()
 }

@@ -14,15 +14,21 @@
 </p>
 
 ```text
- ghat ▸ Runs · rnjn/ghat                                                                22:24
- 4 runs · 0 active · 50% success of 4 finished · median 1m37s
- last failure 23m ago · 0 watched · default branch main
+ ghat ▸ Runs · rnjn/ghat                                                     quota 4932 · 09:13
+ 12 runs · 0 active · 83% success of 12 finished · median 55s
+ last failure 11h ago · 0 watched · default branch main
 ────────────────────────────────────────────────────────────────────────────────────────────────
-  STATUS       W  WORKFLOW  BRANCH  EVENT              ACTOR  DURATION  RUN
-› ✓ success       CI        main    push               rnjn   49s       #2
-  ✗ failure       Dogfood   main    workflow_dispatch  rnjn   1m37s     #2
-  ⊘ cancelled     Dogfood   main    workflow_dispatch  rnjn   3m54s     #1
-  ✓ success       CI        main    push               rnjn   52s       #1
+  STATUS     W  RUN  COMMIT   DURATION  WORKFLOW                                  BRANCH  EVENT…
+› ✓ success     #2   e2c2316  1m38s     Push on main                              main    dynam…
+  ✓ success     #7   e2c2316  52s       CI                                        main    push …
+  ✓ success     #1   e62e3a3  1m40s     CodeQL Setup                              main    dynam…
+  ✓ success     #1   e62e3a3  38s       Graph Update: go_modules in /. #1616375…  main    dynam…
+  ✓ success     #6   e62e3a3  55s       CI                                        main    push …
+  ✓ success     #5   5400fa5  1m9s      CI                                        main    push …
+  ✓ success     #4   2838c79  44s       CI                                        main    push …
+  ✓ success     #3   df1b487  43s       CI                                        main    push …
+  ✓ success     #2   b560f24  49s       CI                                        main    push …
+  ✗ failure     #2   f9b86a3  1m37s     Dogfood                                   main    workf…
  polled 0s ago
 ```
 
@@ -46,6 +52,7 @@
 
 - **One board for every repo you work on.** Repos you pushed to in the last 14 days, plus pinned ones, with each repo's latest run, running and failed counts.
 - **Drill down.** Repositories → Runs → Pipeline (jobs and steps) → Logs, with a header of live stats on every screen.
+- **Jump to the change.** Each run shows its commit; the short SHA is a clickable link in terminals that support hyperlinks, and `c` opens the commit's diff anywhere.
 - **Live step progress and logs.** Running jobs show each step's status and elapsed time; the full log appears the moment the job finishes, with errors and warnings highlighted.
 - **Search and fold logs.** `/` to search, `n`/`N` to jump between hits, `z` to fold a step's group.
 - **Operate.** Rerun (failed jobs only when any failed), cancel, and dispatch workflows with their inputs, each behind a `y/N` confirmation.
@@ -78,7 +85,7 @@ ghat --here   # straight to the runs of the repo in the current directory
 | Screen | Shows | Header stats |
 |---|---|---|
 | Repositories | each repo's latest run, running and failed counts | repos, unavailable, active runs, success rate, failures, watched |
-| Runs | a repo's runs: status, workflow, branch, event, actor, duration | runs, active, success rate, median duration, last failure |
+| Runs | a repo's runs: status, run number, commit, duration, workflow, branch, event, actor | runs, active, success rate, median duration, last failure |
 | Pipeline | a run's jobs, and the selected job's steps | status, branch, event, actor, duration, jobs done, current step |
 | Logs | live steps while a job runs, then its log | job status, steps done, running step, lines, search hits |
 
@@ -97,6 +104,7 @@ ghat --here   # straight to the runs of the repo in the current directory
 | `x` | cancel the run (asks `y/N`) |
 | `d` | dispatch a workflow: pick one, fill the ref and inputs, confirm `y/N` |
 | `o` | open the current repo, run or job in the browser |
+| `c` | open the run's commit (its diff) in the browser |
 | `R` | refresh the current screen now |
 | `?` | help |
 | `q` | quit |
@@ -114,7 +122,7 @@ ghat list [owner/repo] [--branch B] [--status S] [--limit N] [--json]
 ```
 
 Recent runs as a table (status, workflow, branch, event, actor, duration,
-run number, run ID) or one JSON object per line.
+run number, run ID, commit) or one JSON object per line.
 
 ```sh
 ghat tail <run-id|job-id> [--repo owner/repo] [--no-follow] [--timestamps] [--json]

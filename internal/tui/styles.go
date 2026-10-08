@@ -110,6 +110,15 @@ func fit(lines []string, width, height int) string {
 	return strings.Join(out, "\n")
 }
 
+// hyperlink wraps text in an OSC 8 terminal hyperlink to url. Terminals
+// without hyperlink support show the text alone.
+func hyperlink(url, text string) string {
+	if url == "" || text == "" {
+		return text
+	}
+	return ansi.SetHyperlink(url) + text + ansi.ResetHyperlink()
+}
+
 func truncate(s string, width int) string {
 	if width <= 0 {
 		return ""

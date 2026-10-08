@@ -11,6 +11,7 @@ var helpLines = []string{
 	"  x          cancel run                                   asks y/N",
 	"  d          dispatch a workflow with inputs              asks y/N",
 	"  o          open in browser",
+	"  c          open the run's commit (diff) in browser",
 	"  R          refresh this screen",
 	"  tab ←/→    switch pane (jobs)",
 	"  /          search the log · filter runs by branch or status",
