@@ -27,7 +27,7 @@ func TestCommitKeyOpensCommitPage(t *testing.T) {
 		NewTail("acme", "api", ctx.Store.Jobs(12)[0], 0),
 	} {
 		rec.opened = nil
-		_, cmd := s.Update(key("c"), ctx)
+		_, cmd := s.Update(key("C"), ctx)
 		if cmd == nil {
 			t.Fatalf("%s: no command", s.Title())
 		}
@@ -43,7 +43,7 @@ func TestCommitKeyOpensCommitPage(t *testing.T) {
 func TestCommitKeyWithoutCommit(t *testing.T) {
 	ctx, rec, _ := actCtx(t)
 	s, _ := press(NewRuns("acme/api"), ctx, "G") // run 10 has no head SHA
-	_, cmd := s.Update(key("c"), ctx)
+	_, cmd := s.Update(key("C"), ctx)
 	res, _ := cmd().(ActionResult)
 	if res.Err == nil || !strings.Contains(res.Err.Error(), "no commit for this run") || len(rec.opened) != 0 {
 		t.Fatalf("res %+v opened %v", res, rec.opened)

@@ -104,7 +104,7 @@ func TestOpenRunWithoutURL(t *testing.T) {
 	ctx, rec, _ := actCtx(t)
 	s := NewRuns("acme/api")
 	s, _ = press(s, ctx, "j") // run 11 has no HTMLURL in the seed
-	_, cmd := s.Update(key("o"), ctx)
+	_, cmd := s.Update(key("O"), ctx)
 	if res := cmd().(ActionResult); res.Err == nil || !strings.Contains(res.Err.Error(), "no page for this run") {
 		t.Fatalf("res %+v", res)
 	}

@@ -37,18 +37,18 @@ func TestCopyCommitLink(t *testing.T) {
 		NewJobs(run12(ctx.Store)),
 		NewTail("acme", "api", ctx.Store.Jobs(12)[0], 0),
 	} {
-		_, cmd := s.Update(key("C"), ctx)
+		_, cmd := s.Update(key("c"), ctx)
 		copied(t, cmd, commitURL)
 	}
 	if len(rec.opened) != 0 {
-		t.Fatalf("C opened a browser: %v", rec.opened)
+		t.Fatalf("c opened a browser: %v", rec.opened)
 	}
 }
 
 func TestCopyCommitLinkWithoutCommit(t *testing.T) {
 	ctx, _, _ := actCtx(t)
 	s, _ := press(NewRuns("acme/api"), ctx, "G")
-	_, cmd := s.Update(key("C"), ctx)
+	_, cmd := s.Update(key("c"), ctx)
 	if res, _ := cmd().(ActionResult); res.Err == nil || !strings.Contains(res.Err.Error(), "no commit for this run") {
 		t.Fatalf("res %+v", res)
 	}
@@ -67,11 +67,11 @@ func TestCopyCurrentLink(t *testing.T) {
 		{NewTail("acme", "api", jobs[0], 0), "https://github.com/acme/api/actions/runs/12/job/120"},
 		{NewTail("acme", "api", jobs[1], 0), "https://github.com/acme/api/actions/runs/12"},
 	} {
-		_, cmd := tc.s.Update(key("O"), ctx)
+		_, cmd := tc.s.Update(key("o"), ctx)
 		copied(t, cmd, tc.want)
 	}
 	if len(rec.opened) != 0 {
-		t.Fatalf("O opened a browser: %v", rec.opened)
+		t.Fatalf("o opened a browser: %v", rec.opened)
 	}
 }
 

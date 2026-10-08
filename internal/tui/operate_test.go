@@ -104,7 +104,7 @@ func TestOpenInBrowser(t *testing.T) {
 		{NewTail("acme", "api", noURL, 0), "https://github.com/acme/api/actions/runs/12"},
 	} {
 		rec.opened = nil
-		_, cmd := tc.s.Update(key("o"), ctx)
+		_, cmd := tc.s.Update(key("O"), ctx)
 		if cmd == nil {
 			t.Fatalf("%s: no command", tc.s.Title())
 		}
@@ -120,12 +120,12 @@ func TestOpenInBrowser(t *testing.T) {
 func TestOpenErrorAndEmptyList(t *testing.T) {
 	ctx, rec, _ := actCtx(t)
 	rec.openErr = errors.New("no browser")
-	_, cmd := NewRuns("acme/api").Update(key("o"), ctx)
+	_, cmd := NewRuns("acme/api").Update(key("O"), ctx)
 	if res := cmd().(ActionResult); res.Err == nil || !strings.Contains(res.Err.Error(), "no browser") {
 		t.Fatalf("res %+v", res)
 	}
 	rec.opened = nil
-	if _, cmd := NewRuns("acme/none").Update(key("o"), ctx); cmd != nil {
+	if _, cmd := NewRuns("acme/none").Update(key("O"), ctx); cmd != nil {
 		cmd()
 	}
 	if len(rec.opened) != 0 {

@@ -52,7 +52,7 @@
 
 - **One board for every repo you work on.** Repos you pushed to in the last 14 days, plus pinned ones, with each repo's latest run, running and failed counts.
 - **Drill down.** Repositories → Runs → Pipeline (jobs and steps) → Logs, with a header of live stats on every screen.
-- **Jump to the change.** Each run shows its commit; the short SHA is a clickable link in terminals that support hyperlinks, and `c` opens the commit's diff anywhere.
+- **Jump to the change.** Each run shows its commit; the short SHA is a clickable link in terminals that support hyperlinks, `c` copies the commit's diff link and `C` opens it.
 - **Live step progress and logs.** Running jobs show each step's status and elapsed time; the full log appears the moment the job finishes, with errors and warnings highlighted.
 - **Search and fold logs.** `/` to search, `n`/`N` to jump between hits, `z` to fold a step's group.
 - **Operate.** Rerun (failed jobs only when any failed), cancel, and dispatch workflows with their inputs, each behind a `y/N` confirmation.
@@ -107,8 +107,8 @@ ghat --here   # straight to the runs of the repo in the current directory
 | `r` | rerun: only failed jobs if any failed, else all (asks `y/N`) |
 | `x` | cancel the run (asks `y/N`) |
 | `d` | dispatch a workflow: pick one, fill the ref and inputs, confirm `y/N` |
-| `o` / `O` | open the current repo, run or job in the browser / copy its link |
-| `c` / `C` | open the run's commit (its diff) in the browser / copy its link |
+| `o` / `O` | copy the link of the current repo, run or job / open it in the browser |
+| `c` / `C` | copy the link of the run's commit (its diff) / open it in the browser |
 | `R` | refresh the current screen now |
 | `?` | help |
 | `q` | quit |

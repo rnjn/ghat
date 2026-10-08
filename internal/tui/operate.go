@@ -87,7 +87,7 @@ func runURL(ctx *Context, runID int64) string {
 	return ""
 }
 
-// commitKey opens (c) or copies (C) the commit link of run runID.
+// commitKey copies (c) or opens (C) the commit link of run runID.
 func commitKey(ctx *Context, k string, runID int64) tea.Cmd {
 	if k != "c" && k != "C" {
 		return nil
@@ -99,13 +99,13 @@ func commitKey(ctx *Context, k string, runID int64) tea.Cmd {
 	return linkKey(ctx, k, run.CommitURL())
 }
 
-// linkKey opens url for a lowercase key (o, c) and copies it for the
-// uppercase one (O, C).
+// linkKey copies url for a lowercase key (o, c) and opens it in the
+// browser for the uppercase one (O, C).
 func linkKey(ctx *Context, k, url string) tea.Cmd {
 	if k == strings.ToUpper(k) {
-		return copyURL(url)
+		return openURL(ctx, url)
 	}
-	return openURL(ctx, url)
+	return copyURL(url)
 }
 
 // copyURL puts url on the clipboard of the terminal the user sits at (OSC
