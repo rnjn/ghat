@@ -10,6 +10,9 @@ import (
 	"github.com/rnjn/ghat/internal/poller"
 )
 
+// minLeftRoom is the space messages keep before the version is dropped.
+const minLeftRoom = 24
+
 // errorTTL is how long a poll error stays in the status bar.
 const errorTTL = time.Minute
 
@@ -24,6 +27,7 @@ type statusBar struct {
 	flashTo  time.Time
 	prompt   string
 	offline  bool
+	version  string // right-aligned; dropped when the screen is too narrow
 }
 
 // flash shows msg in place of the usual parts until until.
@@ -85,9 +89,14 @@ func (s *statusBar) view(width int, now time.Time) string {
 	if width <= 0 {
 		return ""
 	}
-	line := truncate(" "+strings.Join(parts, " │ "), width)
-	if pad := width - ansi.StringWidth(line); pad > 0 {
+	right := ""
+	if s.version != "" && width >= ansi.StringWidth(s.version)+minLeftRoom {
+		right = s.version + " "
+	}
+	leftW := width - ansi.StringWidth(right)
+	line := truncate(" "+strings.Join(parts, " │ "), leftW)
+	if pad := leftW - ansi.StringWidth(line); pad > 0 {
 		line += strings.Repeat(" ", pad)
 	}
-	return styleStatus.Render(line)
+	return styleStatus.Render(line + right)
 }

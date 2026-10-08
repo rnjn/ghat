@@ -110,3 +110,14 @@ func TestNewModelAtOpensOnRuns(t *testing.T) {
 		t.Fatal("esc did not return to Board")
 	}
 }
+
+func TestModelPassesVersionToFooter(t *testing.T) {
+	ctx, _ := testContext(seedStore())
+	ctx.Version = "ghat v9.9.9"
+	m := NewModel(*ctx, make(chan any))
+	m, _ = update(m, tea.WindowSizeMsg{Width: 100, Height: 20})
+	lines := strings.Split(plain(m.View().Content), "\n")
+	if !strings.Contains(lines[len(lines)-1], "ghat v9.9.9") {
+		t.Fatalf("footer %q", lines[len(lines)-1])
+	}
+}

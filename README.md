@@ -68,6 +68,10 @@ go install github.com/rnjn/ghat/cmd/ghat@latest
 
 Or from a checkout: `make build` writes `bin/ghat`. Requires Go 1.25+.
 
+`ghat --version` and the bottom-right corner of the TUI show what you are
+running: the release (e.g. `v0.1.1`), plus the commit for builds from
+`@main` or a checkout (a `*` marks uncommitted changes).
+
 ## Auth
 
 ghat uses your GitHub CLI login. It reads a token from `GH_TOKEN`, then

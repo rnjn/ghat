@@ -73,6 +73,7 @@ func runTUI(cmd *cobra.Command, d *deps, here bool) error {
 	tctx := tui.Context{
 		Store: st, Refresh: p.Refresh, Now: time.Now, ShowTimestamps: cfg.UI.ShowTimestamps,
 		Actions: actions.New(c), Open: opener(runtime.GOOS, d.run),
+		Version: "ghat " + buildVersion(),
 	}
 	model := tui.NewModel(tctx, msgs)
 	if hereKey != "" {

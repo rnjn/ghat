@@ -86,3 +86,22 @@ func TestStatusBarLowQuota(t *testing.T) {
 		t.Fatalf("status bar = %q", got)
 	}
 }
+
+func TestStatusBarShowsVersionBottomRight(t *testing.T) {
+	sb := statusBar{version: "ghat v0.1.1 · c1a4a44"}
+	sb.observe(poller.Polled{}, ago(2*time.Second))
+	got := plain(sb.view(80, testNow))
+	if !strings.HasSuffix(strings.TrimRight(got, " "), "ghat v0.1.1 · c1a4a44") || !strings.Contains(got, "polled 2s ago") {
+		t.Fatalf("status bar = %q", got)
+	}
+	assertFits(t, sb.view(80, testNow), 80)
+	sb.observe(poller.PollerError{Resource: "runs:a/x", Err: errors.New(strings.Repeat("x", 200))}, testNow)
+	got = plain(sb.view(80, testNow))
+	if !strings.HasSuffix(strings.TrimRight(got, " "), "c1a4a44") {
+		t.Fatalf("long message pushed the version out: %q", got)
+	}
+	assertFits(t, sb.view(80, testNow), 80)
+	if got := plain(sb.view(30, testNow)); strings.Contains(got, "v0.1.1") {
+		t.Fatalf("version kept on a tiny screen: %q", got)
+	}
+}

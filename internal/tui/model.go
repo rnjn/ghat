@@ -21,6 +21,7 @@ type Context struct {
 	ShowTimestamps bool // initial timestamp toggle in Tail (ui.show_timestamps)
 	Actions        Actions
 	Open           func(url string) error
+	Version        string // shown at the bottom right, e.g. "ghat v0.1.1 · c1a4a44"
 }
 
 // Screen is one level of the screen stack.
@@ -69,7 +70,7 @@ type Model struct {
 
 // NewModel starts on the Board and listens to msgs from the poller.
 func NewModel(ctx Context, msgs <-chan any) Model {
-	return Model{ctx: &ctx, msgs: msgs, stack: []Screen{NewBoard()}, status: &statusBar{}}
+	return Model{ctx: &ctx, msgs: msgs, stack: []Screen{NewBoard()}, status: &statusBar{version: ctx.Version}}
 }
 
 // NewModelAt starts on the Runs screen for repoKey, with the Board below it.

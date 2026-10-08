@@ -16,7 +16,7 @@ func runMain(t *testing.T, d *deps, args ...string) (code int, stdout, stderr st
 
 func TestRunVersionExits0(t *testing.T) {
 	code, out, errOut := runMain(t, testDeps(), "--version")
-	if code != 0 || strings.TrimSpace(out) != "ghat dev" || errOut != "" {
+	if code != 0 || !strings.HasPrefix(strings.TrimSpace(out), "ghat dev") || errOut != "" {
 		t.Fatalf("code %d out %q err %q", code, out, errOut)
 	}
 }

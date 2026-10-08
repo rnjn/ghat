@@ -6,8 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "dev"
-
 // exitError carries a specific process exit code out of a command.
 type exitError struct {
 	code int
@@ -42,7 +40,7 @@ func newRootCmdWith(d *deps) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "ghat",
 		Short:         "Terminal UI and CLI for GitHub Actions",
-		Version:       version,
+		Version:       buildVersion(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
