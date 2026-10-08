@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -86,7 +87,16 @@ func (v *pipeView) OnPop(ctx *Context) { ctx.Store.SetFocusRun(v.restore) }
 func (v *pipeView) Resource() string { return fmt.Sprintf("jobs:%d", v.run.ID) }
 
 func (v *pipeView) graph(ctx *Context) graph {
-	return buildGraph(ctx.Store.Jobs(v.run.ID), v.specs, ctx.Now())
+	return buildGraph(ctx.Store.Jobs(v.run.ID), v.specs, ctx.Now(), v.active(ctx))
+}
+
+// active reports whether the run is still going, by its latest state.
+func (v *pipeView) active(ctx *Context) bool {
+	run := v.run
+	if latest, ok := ctx.Store.Run(run.ID); ok {
+		run = latest
+	}
+	return run.Status != "completed"
 }
 
 // order lists node indexes column by column, the j/k order.
@@ -146,7 +156,8 @@ func (v *pipeView) key(k string, ctx *Context) tea.Cmd {
 		}
 		return nil
 	}
-	job := g.nodes[sel].job
+	n := g.nodes[sel]
+	job := n.job
 	switch k {
 	case "o", "O":
 		url := job.HTMLURL
@@ -155,6 +166,9 @@ func (v *pipeView) key(k string, ctx *Context) tea.Cmd {
 		}
 		return linkKey(ctx, k, url)
 	case "enter":
+		if n.placeholder {
+			return fail(errors.New("job not created yet: its needs are still running"))
+		}
 		owner, repo := splitKey(v.run.RepoKey)
 		ctx.Store.SetTailJob(owner, repo, job.ID)
 		t := NewTail(owner, repo, job, 0).(*tailScreen)
@@ -221,7 +235,7 @@ func (v *pipeView) View(ctx *Context, width, height int) string {
 	if width <= 0 || height <= 0 {
 		return ""
 	}
-	g := buildGraph(jobs, v.specs, ctx.Now())
+	g := v.graph(ctx)
 	sel := v.selected(&g)
 	var body []string
 	footer := " tab: timeline · ←/→ columns · enter: log"
@@ -262,6 +276,14 @@ func statusStyle(job gh.Job, selected bool) lipgloss.Style {
 	return st
 }
 
+// nodeDur is a job's duration so far, or "" for one not created yet.
+func nodeDur(n node, now time.Time) string {
+	if n.placeholder {
+		return ""
+	}
+	return fmtDur(span(n.job.StartedAt, n.job.CompletedAt, now))
+}
+
 // jobLabel is "name" capped to maxNameW, bold on the critical path.
 func jobLabel(n node) string {
 	name := truncate(n.job.Name, maxNameW)
@@ -281,7 +303,7 @@ func (v *pipeView) viewDAG(ctx *Context, g *graph, sel, width, height int) []str
 		rows = max(rows, len(col))
 		for _, i := range col {
 			n := g.nodes[i]
-			w := 2 + min(ansi.StringWidth(n.job.Name), maxNameW) + 1 + len(fmtDur(span(n.job.StartedAt, n.job.CompletedAt, now)))
+			w := 2 + min(ansi.StringWidth(n.job.Name), maxNameW) + 1 + len(nodeDur(n, now))
 			boxW[c] = max(boxW[c], w+4)
 		}
 		if c > 0 {
@@ -310,7 +332,7 @@ func (v *pipeView) viewDAG(ctx *Context, g *graph, sel, width, height int) []str
 	for i, n := range g.nodes {
 		st := statusStyle(n.job, i == sel)
 		cv.box(x[n.col], y(i), boxW[n.col], boxH, &st)
-		dur := fmtDur(span(n.job.StartedAt, n.job.CompletedAt, now))
+		dur := nodeDur(n, now)
 		inner := boxW[n.col] - 4
 		label := jobLabel(n)
 		pad := inner - 2 - ansi.StringWidth(label) - len(dur)

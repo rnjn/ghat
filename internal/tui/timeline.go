@@ -170,6 +170,9 @@ func (v *pipeView) viewTimeline(ctx *Context, g *graph, sel, width, height int) 
 		dur := fmtDur(span(j.StartedAt, j.CompletedAt, now))
 		if j.StartedAt.IsZero() {
 			dur = styleDim.Render(state(j.Status, j.Conclusion))
+			if n.placeholder {
+				dur = styleDim.Render("pending")
+			}
 		}
 		rows = append(rows, timelineRow{node: i, text: line(prefix, label, labelW, ax.bar(j.CreatedAt, j.StartedAt, jobEnd(j, now), statusStyle(j, false)), dur)})
 		if i != sel {

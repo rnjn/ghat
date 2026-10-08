@@ -216,6 +216,9 @@ func (v *pipeView) Heading(*Context) string { return v.Title() }
 func (v *pipeView) Stats(ctx *Context) []string {
 	g := v.graph(ctx)
 	line2 := fmt.Sprintf("%d jobs · %d columns", len(g.nodes), len(g.cols))
+	if g.pending > 0 {
+		line2 = fmt.Sprintf("%d jobs (%d not created yet) · %d columns", len(g.nodes), g.pending, len(g.cols))
+	}
 	if len(g.critical) > 0 {
 		names := make([]string, len(g.critical))
 		for i, n := range g.critical {

@@ -15,6 +15,9 @@ type node struct {
 	needs    []int // indexes of the jobs this one depends on
 	col      int   // 1 + the longest chain of needs behind it
 	critical bool
+	// placeholder marks a job the workflow declares that GitHub has not
+	// created yet (its needs are still running).
+	placeholder bool
 }
 
 // graph is a run's jobs with their dependencies, laid out in columns.
@@ -23,11 +26,15 @@ type graph struct {
 	cols     [][]int // node indexes per column, in job order
 	critical []int   // the chain of jobs that set the run's length
 	inferred bool    // some edges come from timing, not from needs:
+	pending  int     // placeholder nodes
 }
 
 // buildGraph joins a run's jobs to the workflow's job specs. Jobs that match
 // no spec (or every job, when specs is nil) get their edges from timing.
-func buildGraph(jobs []gh.Job, specs []workflow.Job, now time.Time) graph {
+// With pending set (the run is still going), specs no job matches become
+// placeholder nodes so the whole pipeline shows before its later stages
+// are created.
+func buildGraph(jobs []gh.Job, specs []workflow.Job, now time.Time, pending bool) graph {
 	g := graph{nodes: make([]node, len(jobs))}
 	byKey := map[string][]int{}
 	spec := make([]int, len(jobs))
@@ -36,6 +43,21 @@ func buildGraph(jobs []gh.Job, specs []workflow.Job, now time.Time) graph {
 		spec[i] = matchSpec(j.Name, specs)
 		if spec[i] >= 0 {
 			byKey[specs[spec[i]].Key] = append(byKey[specs[spec[i]].Key], i)
+		}
+	}
+	if pending {
+		for si, sp := range specs {
+			if len(byKey[sp.Key]) > 0 {
+				continue
+			}
+			name := sp.Name
+			if name == "" || strings.Contains(name, "${{") {
+				name = sp.Key
+			}
+			g.nodes = append(g.nodes, node{job: gh.Job{Name: name, Status: "pending"}, placeholder: true})
+			spec = append(spec, si)
+			byKey[sp.Key] = []int{len(g.nodes) - 1}
+			g.pending++
 		}
 	}
 	for i := range g.nodes {

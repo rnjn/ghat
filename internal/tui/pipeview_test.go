@@ -224,3 +224,36 @@ func TestPipelineViewLinks(t *testing.T) {
 		t.Fatalf("opened %v", rec.opened)
 	}
 }
+
+func TestPipelineViewShowsPendingJobs(t *testing.T) {
+	ctx, v := pipeCtx(t)
+	v.specs = append(v.specs, workflow.Job{Key: "notify", Needs: []string{"deploy"}})
+	out := plain(v.View(ctx, 120, 14))
+	if !strings.Contains(out, "○ notify") || strings.Contains(out, "notify 0s") {
+		t.Fatalf("no placeholder box:\n%s", out)
+	}
+	_, stats := headerOf(t, v, ctx)
+	if !strings.Contains(stats, "6 jobs (1 not created yet) · 4 columns") {
+		t.Fatalf("stats %q", stats)
+	}
+	v.Update(key("G"), ctx) // the placeholder, in the last column
+	_, cmd := v.Update(key("enter"), ctx)
+	if r, ok := cmd().(ActionResult); !ok || r.Err == nil {
+		t.Fatal("enter on a placeholder should explain, not open a log")
+	}
+	v.Update(key("tab"), ctx)
+	if out := plain(v.View(ctx, 120, 14)); !strings.Contains(out, "○ notify") || !strings.Contains(out, "pending") {
+		t.Fatalf("timeline lacks the placeholder:\n%s", out)
+	}
+	// A finished run shows only the jobs GitHub created.
+	runs := ctx.Store.Runs("acme/api")
+	for i := range runs {
+		if runs[i].ID == 12 {
+			runs[i].Status, runs[i].Conclusion = "completed", "success"
+		}
+	}
+	ctx.Store.SetRuns("acme/api", runs, "")
+	if out := plain(v.View(ctx, 120, 14)); strings.Contains(out, "notify") {
+		t.Fatalf("placeholder on a finished run:\n%s", out)
+	}
+}

@@ -26,7 +26,7 @@ func TestBuildGraphFromNeeds(t *testing.T) {
 		{Key: "test", Needs: []string{"build", "lint"}},
 		{Key: "deploy", Needs: []string{"test"}},
 	}
-	g := buildGraph(jobs, specs, testNow)
+	g := buildGraph(jobs, specs, testNow, false)
 	if g.inferred {
 		t.Fatal("edges should come from needs")
 	}
@@ -60,7 +60,7 @@ func TestBuildGraphInfersFromTiming(t *testing.T) {
 		doneJob(4, "d", 7*time.Minute, 6*time.Minute),
 		{ID: 5, Name: "e", Status: "queued"},
 	}
-	g := buildGraph(jobs, nil, testNow)
+	g := buildGraph(jobs, nil, testNow, false)
 	if !g.inferred {
 		t.Fatal("should be inferred")
 	}
@@ -76,7 +76,7 @@ func TestBuildGraphInfersFromTiming(t *testing.T) {
 func TestBuildGraphUnmatchedJobFallsBackToTiming(t *testing.T) {
 	jobs := []gh.Job{doneJob(1, "build", 10*time.Minute, 8*time.Minute), doneJob(2, "Test on linux", 8*time.Minute, 5*time.Minute)}
 	specs := []workflow.Job{{Key: "build"}, {Key: "test", Name: "Test on ${{ matrix.os }}", Needs: []string{"build"}}}
-	g := buildGraph(jobs, specs, testNow)
+	g := buildGraph(jobs, specs, testNow, false)
 	if !g.inferred || !reflect.DeepEqual(g.nodes[1].needs, []int{0}) {
 		t.Fatalf("inferred=%v needs=%v", g.inferred, g.nodes[1].needs)
 	}
@@ -85,15 +85,41 @@ func TestBuildGraphUnmatchedJobFallsBackToTiming(t *testing.T) {
 func TestBuildGraphSurvivesCycle(t *testing.T) {
 	jobs := []gh.Job{doneJob(1, "a", time.Minute, 0), doneJob(2, "b", time.Minute, 0)}
 	specs := []workflow.Job{{Key: "a", Needs: []string{"b"}}, {Key: "b", Needs: []string{"a"}}}
-	g := buildGraph(jobs, specs, testNow)
+	g := buildGraph(jobs, specs, testNow, false)
 	if len(g.cols) == 0 || len(g.critical) == 0 {
 		t.Fatalf("graph %+v", g)
 	}
 }
 
 func TestBuildGraphEmpty(t *testing.T) {
-	g := buildGraph(nil, nil, testNow)
+	g := buildGraph(nil, nil, testNow, false)
 	if len(g.nodes) != 0 || len(g.cols) != 0 || len(g.critical) != 0 {
 		t.Fatalf("graph %+v", g)
+	}
+}
+
+func TestBuildGraphAddsPendingJobsFromSpecs(t *testing.T) {
+	jobs := []gh.Job{{ID: 1, Name: "build", Status: "in_progress", StartedAt: ago(time.Minute)}}
+	specs := []workflow.Job{
+		{Key: "build"},
+		{Key: "test", Name: "Test ${{ matrix.os }}", Needs: []string{"build"}},
+		{Key: "deploy", Needs: []string{"test"}},
+	}
+	g := buildGraph(jobs, specs, testNow, true)
+	if len(g.nodes) != 3 || len(g.cols) != 3 {
+		t.Fatalf("nodes %d cols %d", len(g.nodes), len(g.cols))
+	}
+	test, deploy := g.nodes[1], g.nodes[2]
+	if !test.placeholder || test.job.Name != "test" || test.job.Status != "pending" || test.col != 1 || !reflect.DeepEqual(test.needs, []int{0}) {
+		t.Fatalf("test node %+v", test)
+	}
+	if !deploy.placeholder || deploy.col != 2 || !reflect.DeepEqual(deploy.needs, []int{1}) {
+		t.Fatalf("deploy node %+v", deploy)
+	}
+	if g.pending != 2 || g.inferred || !reflect.DeepEqual(g.critical, []int{0}) {
+		t.Fatalf("pending %d inferred %v critical %v", g.pending, g.inferred, g.critical)
+	}
+	if g := buildGraph(jobs, specs, testNow, false); len(g.nodes) != 1 {
+		t.Fatalf("finished run grew placeholders: %d nodes", len(g.nodes))
 	}
 }
