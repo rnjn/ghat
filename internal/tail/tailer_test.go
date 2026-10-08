@@ -242,3 +242,43 @@ func TestTailerFetchesLogEverySixthPollWhileRunning(t *testing.T) {
 		t.Fatalf("log calls = %d, want 4", src.logCalls)
 	}
 }
+
+func TestFinalFetchSurvivesTransientError(t *testing.T) {
+	src := &fakeSource{
+		jobs: []gh.Job{doneWithSteps()},
+		logs: []logResp{{body: earlyLine}, {err: &gh.APIError{Status: 502}}, {body: earlyLine + lateLine}},
+	}
+	h := &harness{}
+	if _, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit); err != nil {
+		t.Fatalf("transient error during the final fetch ended the tail: %v", err)
+	}
+	if strings.Join(h.got, ",") != "early,Cleaning up orphan processes" {
+		t.Fatalf("emitted %v", h.got)
+	}
+}
+
+func TestFinalFetchStopsOnClientError(t *testing.T) {
+	src := &fakeSource{
+		jobs: []gh.Job{doneWithSteps()},
+		logs: []logResp{{body: earlyLine}, {err: &gh.APIError{Status: 403}}},
+	}
+	h := &harness{}
+	_, err := NewTailer(src, "o", "r", 7, h.opts()).Run(context.Background(), h.emit)
+	var ae *gh.APIError
+	if !errors.As(err, &ae) || ae.Status != 403 {
+		t.Fatalf("err = %v, want the 403", err)
+	}
+}
+
+func TestFinalFetchHonoursCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	src := &fakeSource{jobs: []gh.Job{doneWithSteps()}, logs: []logResp{{body: earlyLine}}}
+	opts := Options{Interval: time.Second, Sleep: func(ctx context.Context, d time.Duration) error {
+		cancel() // the user quits while ghat waits for the lagging log
+		return ctx.Err()
+	}}
+	job, err := NewTailer(src, "o", "r", 7, opts).Run(ctx, func(LogLine) {})
+	if !errors.Is(err, context.Canceled) || job.Status != "completed" {
+		t.Fatalf("job %+v err %v", job, err)
+	}
+}
