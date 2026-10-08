@@ -66,6 +66,9 @@ func (j *jobsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if cmd := commitKey(ctx, k.String(), j.run.ID); cmd != nil {
 		return j, cmd
 	}
+	if cmd := pipelineViewKey(ctx, k.String(), j.run.ID); cmd != nil {
+		return j, cmd
+	}
 	if len(jobs) == 0 {
 		if (k.String() == "o" || k.String() == "O") && j.run.HTMLURL != "" {
 			return j, linkKey(ctx, k.String(), j.run.HTMLURL)

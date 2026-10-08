@@ -137,7 +137,7 @@ func TestListJobs(t *testing.T) {
 		t.Fatalf("len(jobs) = %d", len(jobs))
 	}
 	j := jobs[0]
-	if j.ID != 112631290209 || j.RunID != 37571611570 || j.Name == "" || j.Status != "completed" || j.Conclusion != "success" || j.StartedAt.IsZero() {
+	if j.ID != 112631290209 || j.RunID != 37571611570 || j.Name == "" || j.Status != "completed" || j.Conclusion != "success" || j.StartedAt.IsZero() || j.CreatedAt.IsZero() || !j.CreatedAt.Before(j.StartedAt) {
 		t.Fatalf("job = %+v", j)
 	}
 	if len(j.Steps) == 0 || j.Steps[0].Number != 1 || j.Steps[0].Name != "Set up job" {

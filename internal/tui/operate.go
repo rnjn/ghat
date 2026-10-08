@@ -20,6 +20,7 @@ type Actions interface {
 	Cancel(ctx context.Context, run gh.Run) (string, error)
 	Dispatchable(ctx context.Context, owner, repo, ref string) ([]actions.Dispatchable, error)
 	Dispatch(ctx context.Context, owner, repo string, wf gh.Workflow, ref string, inputs []workflow.Input, values map[string]string) (string, error)
+	JobGraph(ctx context.Context, owner, repo string, workflowID int64, ref string) ([]workflow.Job, error)
 }
 
 func fail(err error) tea.Cmd { return func() tea.Msg { return ActionResult{Err: err} } }

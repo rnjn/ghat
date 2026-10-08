@@ -119,6 +119,7 @@ type Job struct {
 	Name        string    `json:"name"`
 	Status      string    `json:"status"`
 	Conclusion  string    `json:"conclusion"`
+	CreatedAt   time.Time `json:"created_at"` // when the job was queued
 	StartedAt   time.Time `json:"started_at"`
 	CompletedAt time.Time `json:"completed_at"`
 	HTMLURL     string    `json:"html_url"`

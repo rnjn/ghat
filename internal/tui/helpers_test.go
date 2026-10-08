@@ -146,6 +146,13 @@ type fakeActions struct {
 	loadErr      error
 	dispatched   map[string]string
 	dispatchRef  string
+	graph        []workflow.Job
+	graphErr     error
+}
+
+func (f *fakeActions) JobGraph(_ context.Context, owner, repo string, workflowID int64, ref string) ([]workflow.Job, error) {
+	f.calls = append(f.calls, fmt.Sprintf("graph %s/%s %d@%s", owner, repo, workflowID, ref))
+	return f.graph, f.graphErr
 }
 
 func (f *fakeActions) Rerun(_ context.Context, run gh.Run) (string, error) {

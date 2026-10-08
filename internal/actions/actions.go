@@ -201,3 +201,21 @@ func (s *Service) Dispatch(ctx context.Context, owner, repo string, wf gh.Workfl
 	}
 	return fmt.Sprintf("dispatch of %s on %s requested", wf.Name, ref), nil
 }
+
+// JobGraph returns the jobs of workflow workflowID as declared in its file
+// at ref, with their needs.
+func (s *Service) JobGraph(ctx context.Context, owner, repo string, workflowID int64, ref string) ([]workflow.Job, error) {
+	wfs, err := s.api.ListWorkflows(ctx, owner, repo)
+	if err != nil {
+		return nil, err
+	}
+	i := slices.IndexFunc(wfs, func(w gh.Workflow) bool { return w.ID == workflowID })
+	if i < 0 {
+		return nil, fmt.Errorf("workflow %d not found in %s/%s", workflowID, owner, repo)
+	}
+	file, err := s.api.WorkflowFile(ctx, owner, repo, wfs[i].Path, ref)
+	if err != nil {
+		return nil, err
+	}
+	return workflow.ParseJobs(file)
+}

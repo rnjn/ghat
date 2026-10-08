@@ -237,3 +237,23 @@ func TestDispatchableReportsParseErrors(t *testing.T) {
 		t.Fatalf("got %+v err %v", got, err)
 	}
 }
+
+func TestJobGraph(t *testing.T) {
+	api := &fakeAPI{
+		workflows: []gh.Workflow{{ID: 1, Path: "ci.yml", State: "active"}, {ID: 2, Path: "deploy.yml", State: "active"}},
+		files:     map[string]string{"deploy.yml": "jobs:\n  build: {}\n  deploy:\n    needs: build\n"},
+	}
+	got, err := New(api).JobGraph(context.Background(), "o", "r", 2, "abc123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[1].Key != "deploy" || got[1].Needs[0] != "build" {
+		t.Fatalf("got %+v", got)
+	}
+	if api.calls[len(api.calls)-1] != "file deploy.yml@abc123" {
+		t.Fatalf("calls %v", api.calls)
+	}
+	if _, err := New(api).JobGraph(context.Background(), "o", "r", 7, "abc123"); err == nil || !strings.Contains(err.Error(), "workflow 7") {
+		t.Fatalf("unknown workflow: %v", err)
+	}
+}

@@ -160,8 +160,9 @@ func (j *jobsScreen) Heading(*Context) string {
 	return fmt.Sprintf("Pipeline · %s #%d %s", j.run.RepoKey, j.run.Number, j.run.WorkflowName)
 }
 
-func (j *jobsScreen) Stats(ctx *Context) []string {
-	run := j.run
+// runLine is the header's first stats line for a run: state, branch,
+// event, actor and elapsed time.
+func runLine(ctx *Context, run gh.Run) string {
 	if latest, ok := ctx.Store.Run(run.ID); ok {
 		run = latest
 	}
@@ -169,6 +170,15 @@ func (j *jobsScreen) Stats(ctx *Context) []string {
 	end := run.UpdatedAt
 	if run.Status != "completed" {
 		end = now
+	}
+	return fmt.Sprintf("%s %s · %s · %s · %s · %s", glyph(run.Status, run.Conclusion), state(run.Status, run.Conclusion),
+		run.Branch, run.Event, run.Actor, fmtDur(span(run.CreatedAt, end, now)))
+}
+
+func (j *jobsScreen) Stats(ctx *Context) []string {
+	run := j.run
+	if latest, ok := ctx.Store.Run(run.ID); ok {
+		run = latest
 	}
 	jobs := ctx.Store.Jobs(run.ID)
 	done, failed, running := 0, 0, ""
@@ -196,11 +206,33 @@ func (j *jobsScreen) Stats(ctx *Context) []string {
 	if running != "" {
 		line2 += " · " + running
 	}
-	return []string{
-		fmt.Sprintf("%s %s · %s · %s · %s · %s", glyph(run.Status, run.Conclusion), state(run.Status, run.Conclusion),
-			run.Branch, run.Event, run.Actor, fmtDur(span(run.CreatedAt, end, now))),
-		line2,
+	return []string{runLine(ctx, run), line2}
+}
+
+// Pipeline view (Graph / Timeline).
+
+func (v *pipeView) Heading(*Context) string { return v.Title() }
+
+func (v *pipeView) Stats(ctx *Context) []string {
+	g := v.graph(ctx)
+	line2 := fmt.Sprintf("%d jobs · %d columns", len(g.nodes), len(g.cols))
+	if len(g.critical) > 0 {
+		names := make([]string, len(g.critical))
+		for i, n := range g.critical {
+			names[i] = g.nodes[n].job.Name
+		}
+		last := g.nodes[g.critical[len(g.critical)-1]].job
+		line2 += fmt.Sprintf(" · critical path %s (%s)", strings.Join(names, " › "), fmtDur(span(v.run.CreatedAt, jobEnd(last, ctx.Now()), ctx.Now())))
 	}
+	switch {
+	case v.loading:
+		line2 += " · loading dependencies…"
+	case v.loadErr != nil:
+		line2 += " · needs from timing (" + v.loadErr.Error() + ")"
+	case g.inferred:
+		line2 += " · needs from timing"
+	}
+	return []string{runLine(ctx, v.run), line2}
 }
 
 // Logs (Tail).

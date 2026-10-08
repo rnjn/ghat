@@ -129,6 +129,9 @@ func (r *runsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if cmd := commitKey(ctx, k.String(), run.ID); cmd != nil {
 		return r, cmd
 	}
+	if cmd := pipelineViewKey(ctx, k.String(), run.ID); cmd != nil {
+		return r, cmd
+	}
 	switch k.String() {
 	case "enter":
 		ctx.Store.SetFocusRun(run.ID)

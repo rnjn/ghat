@@ -53,6 +53,7 @@
 - **One board for every repo you work on.** Repos you pushed to in the last 14 days, plus pinned ones, with each repo's latest run, running and failed counts.
 - **Drill down.** Repositories → Runs → Pipeline (jobs and steps) → Logs, with a header of live stats on every screen.
 - **Jump to the change.** Each run shows its commit; the short SHA is a clickable link in terminals that support hyperlinks, `c` copies the commit's diff link and `C` opens it.
+- **See the pipeline.** `v` draws a run as a dependency graph (jobs as boxes, `needs:` as arrows, read from the workflow file at the run's commit) or, with `tab`, as a timeline: queue wait, run time and the selected job's steps as bars on one axis. Both mark the critical path — the chain of jobs that set the run's length.
 - **Live step progress and logs.** Running jobs show each step's status and elapsed time; the full log appears the moment the job finishes, with errors and warnings highlighted.
 - **Search and fold logs.** `/` to search, `n`/`N` to jump between hits, `z` to fold a step's group.
 - **Operate.** Rerun (failed jobs only when any failed), cancel, and dispatch workflows with their inputs, each behind a `y/N` confirmation.
@@ -91,6 +92,7 @@ ghat --here   # straight to the runs of the repo in the current directory
 | Repositories | each repo's latest run, running and failed counts | repos, unavailable, active runs, success rate, failures, watched |
 | Runs | a repo's runs: status, run number, commit, duration, workflow, branch, event, actor | runs, active, success rate, median duration, last failure |
 | Pipeline | a run's jobs, and the selected job's steps | status, branch, event, actor, duration, jobs done, current step |
+| Graph / Timeline | a run as a dependency graph, or as bars on a time axis | jobs, columns, critical path and its length, whether edges came from `needs:` or from timing |
 | Logs | live steps while a job runs, then its log | job status, steps done, running step, lines, search hits |
 
 | Key | Action |
@@ -98,7 +100,8 @@ ghat --here   # straight to the runs of the repo in the current directory
 | `↑`/`k` `↓`/`j` `g` `G` `PgUp` `PgDn` | move or scroll |
 | `enter` | open the selected repo, run, job or step |
 | `esc` | back (or close a search or filter) |
-| `tab` `←` `→` | switch between jobs and steps |
+| `tab` `←` `→` | switch between jobs and steps; on the graph, `tab` switches graph / timeline and `←` `→` move between columns |
+| `v` | view the run as a graph or timeline (from Runs or Pipeline) |
 | `/` | search the log (literal, case-insensitive); on Runs, filter by branch or status |
 | `n` `N` | next / previous search hit |
 | `z` `Z` | fold or unfold the group under the cursor / unfold all |
