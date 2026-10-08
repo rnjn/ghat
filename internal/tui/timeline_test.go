@@ -23,7 +23,7 @@ func TestAxisBarOffsetsWithoutCreatedTime(t *testing.T) {
 }
 
 func TestTickLabels(t *testing.T) {
-	for d, want := range map[time.Duration]string{0: "0", 30 * time.Second: "30s", 5 * time.Minute: "5m", time.Hour: "1h", 90 * time.Minute: "1h30m"} {
+	for d, want := range map[time.Duration]string{0: "0", 30 * time.Second: "30s", 5 * time.Minute: "5m", time.Hour: "1h", 90 * time.Minute: "1h30m", 70 * time.Second: "1m10s", 2*time.Hour + 5*time.Second: "2h0m5s"} {
 		if got := tickLabel(d); got != want {
 			t.Errorf("%v: %q want %q", d, got, want)
 		}

@@ -38,19 +38,23 @@ var tickSteps = []time.Duration{time.Second, 5 * time.Second, 10 * time.Second, 
 	time.Minute, 2 * time.Minute, 5 * time.Minute, 10 * time.Minute, 15 * time.Minute, 30 * time.Minute,
 	time.Hour, 2 * time.Hour, 6 * time.Hour, 12 * time.Hour, 24 * time.Hour}
 
-// tickLabel is a short duration: 30s, 5m, 1h, 1h30m.
+// tickLabel is a short duration: 30s, 5m, 1m10s, 1h, 1h30m.
 func tickLabel(d time.Duration) string {
-	switch {
-	case d == 0:
+	if d == 0 {
 		return "0"
-	case d%time.Hour == 0:
-		return fmt.Sprintf("%dh", int(d.Hours()))
-	case d%time.Minute == 0 && d > time.Hour:
-		return fmt.Sprintf("%dh%dm", int(d.Hours()), int(d.Minutes())%60)
-	case d%time.Minute == 0:
-		return fmt.Sprintf("%dm", int(d.Minutes()))
 	}
-	return fmt.Sprintf("%ds", int(d.Seconds()))
+	h, m, sec := int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60
+	var b strings.Builder
+	if h > 0 {
+		fmt.Fprintf(&b, "%dh", h)
+	}
+	if m > 0 || (h > 0 && sec > 0) {
+		fmt.Fprintf(&b, "%dm", m)
+	}
+	if sec > 0 {
+		fmt.Fprintf(&b, "%ds", sec)
+	}
+	return b.String()
 }
 
 // axis maps times onto a bar of w cells.
