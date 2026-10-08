@@ -119,3 +119,34 @@ func TestDir(t *testing.T) {
 		t.Fatalf("Dir = %s", Dir())
 	}
 }
+
+func TestSaveRenameFailureLeavesNoTemp(t *testing.T) {
+	dir := t.TempDir()
+	// A non-empty directory where the cache file should go makes the final
+	// rename fail after the temp file was written.
+	blocker := filepath.Join(dir, fileName)
+	if err := os.MkdirAll(filepath.Join(blocker, "x"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(dir, FromStore(seeded(), now)); err == nil {
+		t.Fatal("Save over a directory succeeded")
+	}
+	entries, _ := os.ReadDir(dir)
+	if len(entries) != 1 || entries[0].Name() != fileName {
+		t.Fatalf("leftover files: %v", entries)
+	}
+	if _, ok := Load(dir); ok {
+		t.Fatal("Load read a directory as a cache")
+	}
+}
+
+func TestSaveCreateDirFailure(t *testing.T) {
+	parent := t.TempDir()
+	file := filepath.Join(parent, "not-a-dir")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(filepath.Join(file, "ghat"), FromStore(seeded(), now)); err == nil {
+		t.Fatal("Save under a regular file succeeded")
+	}
+}
