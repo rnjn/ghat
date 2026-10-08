@@ -106,11 +106,11 @@ func (a axis) labels() (ticks, rule string) {
 			break
 		}
 		r[x] = '┬'
-		for i, c := range []rune(tickLabel(d)) {
-			if x+i < a.w {
-				t[x+i] = c
-			}
+		label := []rune(tickLabel(d))
+		if x+len(label) > a.w {
+			continue
 		}
+		copy(t[x:], label)
 	}
 	return styleDim.Render(string(t)), styleDim.Render(string(r))
 }
@@ -130,9 +130,13 @@ func (v *pipeView) viewTimeline(ctx *Context, g *graph, sel, width, height int) 
 	}
 	labelW := 0
 	for _, n := range g.nodes {
-		labelW = max(labelW, min(ansi.StringWidth(n.job.Name), maxNameW))
+		labelW = max(labelW, min(ansi.StringWidth(n.job.Name), maxNameW)+4) // "› " and glyph
 	}
-	labelW += 4 // "› " and glyph
+	if sel >= 0 {
+		for _, st := range g.nodes[sel].job.Steps {
+			labelW = max(labelW, min(ansi.StringWidth(st.Name), maxNameW)+6) // indented under the job
+		}
+	}
 	const durW = 9
 	barW := width - labelW - durW - 2
 	end := run.UpdatedAt

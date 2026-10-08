@@ -27,7 +27,7 @@ func seedPipeline(ctx *Context) {
 	deploy := j(205, "deploy / push", "in_progress", "", 4*time.Minute, 3*time.Minute, 0)
 	deploy.Steps = []gh.Step{
 		{Number: 1, Name: "Set up job", Status: "completed", Conclusion: "success", StartedAt: ago(3 * time.Minute), CompletedAt: ago(170 * time.Second)},
-		{Number: 2, Name: "Push image", Status: "in_progress", StartedAt: ago(170 * time.Second)},
+		{Number: 2, Name: "Push image to registry", Status: "in_progress", StartedAt: ago(170 * time.Second)},
 	}
 	runs := ctx.Store.Runs("acme/api")
 	for i := range runs {
@@ -79,6 +79,9 @@ func TestPipelineViewTimelineGolden(t *testing.T) {
 	v.Update(key("G"), ctx) // deploy: running, with steps
 	out := v.View(ctx, 100, 14)
 	assertFits(t, out, 100)
+	if !strings.Contains(plain(out), "Push image to registry") {
+		t.Fatalf("step name truncated:\n%s", plain(out))
+	}
 	golden.RequireEqual(t, plain(out))
 }
 

@@ -35,4 +35,12 @@ func TestTickLabels(t *testing.T) {
 	}
 }
 
+func TestTickLabelsDropOnesThatDoNotFit(t *testing.T) {
+	ax := axis{t0: testNow, total: 61 * time.Second, w: 14}
+	ticks, _ := ax.labels()
+	if got := plain(ticks); strings.Contains(got, "1") {
+		t.Fatalf("ticks %q should drop the cut label", got)
+	}
+}
+
 func contains(s, sub string) bool { return strings.Contains(s, sub) }
