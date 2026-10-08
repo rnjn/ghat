@@ -73,3 +73,25 @@ func TestLoadBadDuration(t *testing.T) {
 		t.Fatal("want error for bad duration")
 	}
 }
+
+func TestDefaultPathIsGhat(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "/tmp/xdg")
+	if got := DefaultPath(); got != "/tmp/xdg/ghat/config.yaml" {
+		t.Fatalf("DefaultPath = %s", got)
+	}
+}
+
+func TestLoadFallsBackToLegacyGhtuiConfig(t *testing.T) {
+	dir := t.TempDir()
+	legacy := filepath.Join(dir, "ghtui", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(legacy), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(legacy, []byte("poll:\n  logs: 2s\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(filepath.Join(dir, "ghat", "config.yaml"))
+	if err != nil || c.Poll.Logs.D() != 2*time.Second {
+		t.Fatalf("legacy config not used: %+v %v", c.Poll, err)
+	}
+}

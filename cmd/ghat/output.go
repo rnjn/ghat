@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 // runState is the conclusion of a completed run, else its status.

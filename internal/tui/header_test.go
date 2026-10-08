@@ -7,8 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rnjn/ghtui/internal/poller"
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/poller"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 func headerOf(t *testing.T, s Screen, ctx *Context) (string, string) {
@@ -85,7 +85,7 @@ func TestModelRendersHeader(t *testing.T) {
 	if len(lines) != 20 {
 		t.Fatalf("%d lines", len(lines))
 	}
-	if !strings.HasPrefix(lines[0], " ghtui ▸ Repositories") || !strings.Contains(lines[0], "quota 4321") ||
+	if !strings.HasPrefix(lines[0], " ghat ▸ Repositories") || !strings.Contains(lines[0], "quota 4321") ||
 		!strings.Contains(lines[0], testNow.Local().Format("15:04")) {
 		t.Fatalf("title line %q", lines[0])
 	}

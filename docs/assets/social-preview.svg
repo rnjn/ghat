@@ -14,7 +14,7 @@
     </g>
   </g>
   <!-- wordmark and tagline -->
-  <text x="530" y="300" font-family="Menlo, SF Mono, monospace" font-size="120" font-weight="700" fill="#e6edf3">ghtui</text>
+  <text x="530" y="300" font-family="Menlo, SF Mono, monospace" font-size="120" font-weight="700" fill="#e6edf3">ghat</text>
   <text x="534" y="372" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="36" fill="#a8b3bf">A terminal dashboard and CLI</text>
   <text x="534" y="420" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="36" fill="#a8b3bf">for GitHub Actions</text>
   <!-- status legend -->

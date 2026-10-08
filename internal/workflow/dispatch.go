@@ -1,4 +1,4 @@
-// Package workflow reads what ghtui needs from GitHub Actions workflow files.
+// Package workflow reads what ghat needs from GitHub Actions workflow files.
 package workflow
 
 import (

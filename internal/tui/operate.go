@@ -7,10 +7,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rnjn/ghtui/internal/actions"
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/store"
-	"github.com/rnjn/ghtui/internal/workflow"
+	"github.com/rnjn/ghat/internal/actions"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
+	"github.com/rnjn/ghat/internal/workflow"
 )
 
 // Actions performs operations on GitHub; *actions.Service satisfies it.

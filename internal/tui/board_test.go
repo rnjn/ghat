@@ -7,9 +7,9 @@ import (
 
 	"github.com/charmbracelet/x/exp/golden"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/poller"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/poller"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 func TestBoardGolden(t *testing.T) {

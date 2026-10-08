@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// The repo's own workflows must parse the way ghtui expects.
+// The repo's own workflows must parse the way ghat expects.
 func TestRepoWorkflowsAreDispatchable(t *testing.T) {
 	for file, inputs := range map[string]int{"../../.github/workflows/dogfood.yml": 3, "../../.github/workflows/ci.yml": 0} {
 		b, err := os.ReadFile(file)

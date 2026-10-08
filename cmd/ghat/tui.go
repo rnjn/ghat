@@ -10,11 +10,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/rnjn/ghtui/internal/actions"
-	"github.com/rnjn/ghtui/internal/cache"
-	"github.com/rnjn/ghtui/internal/poller"
-	"github.com/rnjn/ghtui/internal/store"
-	"github.com/rnjn/ghtui/internal/tui"
+	"github.com/rnjn/ghat/internal/actions"
+	"github.com/rnjn/ghat/internal/cache"
+	"github.com/rnjn/ghat/internal/poller"
+	"github.com/rnjn/ghat/internal/store"
+	"github.com/rnjn/ghat/internal/tui"
 )
 
 // runTUI starts the poller and the Bubble Tea program, and stops both when

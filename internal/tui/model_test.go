@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rnjn/ghtui/internal/poller"
+	"github.com/rnjn/ghat/internal/poller"
 )
 
 func newTestModel(t *testing.T) (Model, chan any) {
@@ -26,7 +26,7 @@ func update(m Model, msg tea.Msg) (Model, tea.Cmd) {
 func TestModelStartsOnBoardAndRendersStatusBar(t *testing.T) {
 	m, _ := newTestModel(t)
 	v := plain(m.View().Content)
-	if !strings.Contains(v, "acme/api") || !strings.Contains(v, "ghtui ▸ Repositories") {
+	if !strings.Contains(v, "acme/api") || !strings.Contains(v, "ghat ▸ Repositories") {
 		t.Fatalf("view:\n%s", v)
 	}
 	if !m.View().AltScreen {

@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 func newWatchCmd(d *deps) *cobra.Command {

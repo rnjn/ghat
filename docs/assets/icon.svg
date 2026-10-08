@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128" role="img" aria-label="ghtui">
-  <title>ghtui</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128" role="img" aria-label="ghat">
+  <title>ghat</title>
   <!-- A status board: one row per run, led by its state (passed, running, failed). -->
   <rect width="64" height="64" rx="14" fill="#0d1117"/>
   <circle cx="17" cy="19" r="5.5" fill="#3fb950"/>

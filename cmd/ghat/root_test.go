@@ -14,7 +14,7 @@ func TestRootVersion(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
-	if got := strings.TrimSpace(out.String()); got != "ghtui dev" {
-		t.Fatalf("version output = %q, want %q", got, "ghtui dev")
+	if got := strings.TrimSpace(out.String()); got != "ghat dev" {
+		t.Fatalf("version output = %q, want %q", got, "ghat dev")
 	}
 }

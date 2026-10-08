@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/assets/icon.svg" width="96" alt="ghtui: a status board icon">
+  <img src="docs/assets/icon.svg" width="96" alt="ghat: a status board icon">
 </p>
 
-<h1 align="center">ghtui</h1>
+<h1 align="center">ghat</h1>
 
 <p align="center">
   A terminal dashboard and CLI for GitHub Actions.<br>
@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rnjn/ghtui/actions/workflows/ci.yml"><img src="https://github.com/rnjn/ghtui/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/rnjn/ghat/actions/workflows/ci.yml"><img src="https://github.com/rnjn/ghat/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
 ```text
- ghtui ▸ Runs · rnjn/ghtui                                                                22:24
+ ghat ▸ Runs · rnjn/ghat                                                                22:24
  4 runs · 0 active · 50% success of 4 finished · median 1m37s
  last failure 23m ago · 0 watched · default branch main
 ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@
 ```
 
 ```text
- ghtui ▸ Pipeline · rnjn/ghtui #2 CI                                                      22:26
+ ghat ▸ Pipeline · rnjn/ghat #2 CI                                                      22:26
  ✓ success · main · push · rnjn · 49s
  jobs 3/3 done · 0 failed
 ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -50,20 +50,20 @@
 - **Search and fold logs.** `/` to search, `n`/`N` to jump between hits, `z` to fold a step's group.
 - **Operate.** Rerun (failed jobs only when any failed), cancel, and dispatch workflows with their inputs, each behind a `y/N` confirmation.
 - **Watch a run.** `w` rings the bell and flashes the result when it finishes.
-- **Scriptable CLI.** `ghtui list`, `ghtui tail` and `ghtui watch` with exit codes that follow the run's conclusion.
+- **Scriptable CLI.** `ghat list`, `ghat tail` and `ghat watch` with exit codes that follow the run's conclusion.
 - **Gentle on the API.** ETags, staggered polling, polling only what you look at, automatic slow-down when the rate limit runs low, and a disk cache for instant restarts.
 
 ## Install
 
 ```sh
-go install github.com/rnjn/ghtui/cmd/ghtui@latest
+go install github.com/rnjn/ghat/cmd/ghat@latest
 ```
 
-Or from a checkout: `make build` writes `bin/ghtui`. Requires Go 1.25+.
+Or from a checkout: `make build` writes `bin/ghat`. Requires Go 1.25+.
 
 ## Auth
 
-ghtui uses your GitHub CLI login. It reads a token from `GH_TOKEN`, then
+ghat uses your GitHub CLI login. It reads a token from `GH_TOKEN`, then
 `GITHUB_TOKEN`, then `gh auth token`; if none works, run `gh auth login`.
 The token stays in memory. Rerun, cancel and dispatch need write access to
 the repository (the `repo` scope `gh auth login` grants is enough).
@@ -71,8 +71,8 @@ the repository (the `repo` scope `gh auth login` grants is enough).
 ## The TUI
 
 ```sh
-ghtui          # Repositories: every repo you pushed to recently
-ghtui --here   # straight to the runs of the repo in the current directory
+ghat          # Repositories: every repo you pushed to recently
+ghat --here   # straight to the runs of the repo in the current directory
 ```
 
 | Screen | Shows | Header stats |
@@ -110,37 +110,37 @@ Each command takes `owner/repo` (or `--repo owner/repo`); without it,
 the repo comes from the current directory's `origin` remote.
 
 ```sh
-ghtui list [owner/repo] [--branch B] [--status S] [--limit N] [--json]
+ghat list [owner/repo] [--branch B] [--status S] [--limit N] [--json]
 ```
 
 Recent runs as a table (status, workflow, branch, event, actor, duration,
 run number, run ID) or one JSON object per line.
 
 ```sh
-ghtui tail <run-id|job-id> [--repo owner/repo] [--no-follow] [--timestamps] [--json]
+ghat tail <run-id|job-id> [--repo owner/repo] [--no-follow] [--timestamps] [--json]
 ```
 
 Waits for a job and prints its log. A run ID resolves to its only job or its
-only running job; otherwise ghtui lists the jobs and asks for a job ID.
+only running job; otherwise ghat lists the jobs and asks for a job ID.
 
 ```sh
-ghtui watch <run-id> [--repo owner/repo] [--interval 5s]
+ghat watch <run-id> [--repo owner/repo] [--interval 5s]
 ```
 
 Prints one line per run or job status change until the run finishes.
 
 `tail` and `watch` exit 0 on `success`, 1 on any other conclusion, and 2
-on usage or API errors, so they work in scripts: `ghtui watch $id && deploy`.
+on usage or API errors, so they work in scripts: `ghat watch $id && deploy`.
 
 ### About live logs
 
 GitHub has no streaming log API, and it publishes a job's log only once the
-whole job has finished. While a job runs, ghtui shows each step's status and
+whole job has finished. While a job runs, ghat shows each step's status and
 elapsed time; the log appears as soon as GitHub publishes it.
 
 ## Configuration
 
-Optional, at `~/.config/ghtui/config.yaml`:
+Optional, at `~/.config/ghat/config.yaml`:
 
 ```yaml
 repos:
@@ -151,13 +151,16 @@ poll:
   runs_active: 15s           # repos with a running or queued run
   runs_idle: 60s
   jobs: 5s                   # the run you are viewing or watching
-  logs: 5s                   # ghtui tail
+  logs: 5s                   # ghat tail
 ui:
   show_timestamps: false
 ```
 
-Repos, runs and ETags are cached in `~/.cache/ghtui/` (or
-`$XDG_CACHE_HOME/ghtui/`), so a restart shows the board at once; a broken
+ghat was called ghtui before 2026-10-08; a config left at
+`~/.config/ghtui/config.yaml` is still read until you move it.
+
+Repos, runs and ETags are cached in `~/.cache/ghat/` (or
+`$XDG_CACHE_HOME/ghat/`), so a restart shows the board at once; a broken
 cache is ignored. Polling slows ×2 below 500 remaining API requests and ×4
 below 100, and the header shows the remaining quota.
 
@@ -171,7 +174,7 @@ make build
 
 CI runs test, lint and build on every push. The manual
 [Dogfood](.github/workflows/dogfood.yml) workflow has timed steps, annotations
-and a selectable outcome, for trying ghtui against real runs.
+and a selectable outcome, for trying ghat against real runs.
 
 The design lives in [docs/specs](docs/specs/2026-10-07-ghtui-design.md) and
 the implementation plans in [docs/plans](docs/plans).

@@ -40,7 +40,7 @@ func newRootCmd() *cobra.Command { return newRootCmdWith(defaultDeps()) }
 
 func newRootCmdWith(d *deps) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "ghtui",
+		Use:           "ghat",
 		Short:         "Terminal UI and CLI for GitHub Actions",
 		Version:       version,
 		SilenceUsage:  true,
@@ -50,7 +50,7 @@ func newRootCmdWith(d *deps) *cobra.Command {
 	var here bool
 	cmd.Flags().BoolVar(&here, "here", false, "open on the runs of the repo in the current directory")
 	cmd.RunE = func(cmd *cobra.Command, _ []string) error { return runTUI(cmd, d, here) }
-	cmd.SetVersionTemplate("ghtui {{.Version}}\n")
+	cmd.SetVersionTemplate("ghat {{.Version}}\n")
 	cmd.PersistentFlags().StringVar(&d.apiURL, "api-url", "", "GitHub API base URL")
 	_ = cmd.PersistentFlags().MarkHidden("api-url")
 	cmd.AddCommand(newListCmd(d), newTailCmd(d), newWatchCmd(d))

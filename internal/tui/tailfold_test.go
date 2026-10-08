@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 // groupedLog: header A with 2 lines, a plain line, header B with 3 lines.

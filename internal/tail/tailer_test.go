@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 type logResp struct {

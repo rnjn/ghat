@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 func newTailCmd(d *deps) *cobra.Command {
@@ -66,7 +66,7 @@ func newTailCmd(d *deps) *cobra.Command {
 			t := tail.NewTailer(c, owner, repo, job.ID, tail.Options{Interval: cfg.Poll.Logs.D(), Sleep: d.sleep})
 			final, err := t.Run(cmd.Context(), emit)
 			if errors.Is(err, tail.ErrLogIncomplete) {
-				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "ghtui:", err)
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "ghat:", err)
 				err = nil
 			}
 			if err != nil {
@@ -87,7 +87,7 @@ func newTailCmd(d *deps) *cobra.Command {
 func printOnce(cmd *cobra.Command, c *gh.Client, owner, repo string, job gh.Job, emit func(tail.LogLine)) error {
 	raw, err := c.JobLog(cmd.Context(), owner, repo, job.ID)
 	if errors.Is(err, gh.ErrLogNotReady) {
-		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "ghtui:", tail.ErrLogIncomplete)
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "ghat:", tail.ErrLogIncomplete)
 	} else if err != nil {
 		return err
 	}

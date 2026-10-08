@@ -1,4 +1,4 @@
-# A manual playground for trying ghtui against real runs: step progress,
+# A manual playground for trying ghat against real runs: step progress,
 # annotations, failures to rerun, and long runs to cancel.
 name: Dogfood
 

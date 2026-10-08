@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/config"
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/config"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 type logResp struct {

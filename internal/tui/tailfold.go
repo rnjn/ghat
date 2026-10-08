@@ -3,7 +3,7 @@ package tui
 import (
 	"sort"
 
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 // logIndex maps a job's log lines to the lines on screen. End-group

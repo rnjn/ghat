@@ -9,9 +9,9 @@ import (
 
 	"github.com/charmbracelet/x/exp/golden"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/poller"
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/poller"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 func tailCtx(t *testing.T, jobID int64, step int) (*Context, Screen) {
@@ -165,7 +165,7 @@ func TestTailResizeKeepsScrollValid(t *testing.T) {
 func TestTailSanitizesTabsAndControls(t *testing.T) {
 	ctx, s := tailCtx(t, 121, 0)
 	ctx.Store.SetLog(121, []tail.LogLine{
-		{Text: "ok  \tghtui/internal/gh\t0.5s\t" + strings.Repeat("x", 30)},
+		{Text: "ok  \tghat/internal/gh\t0.5s\t" + strings.Repeat("x", 30)},
 		{Text: "progress 10%\rprogress 100%"},
 		{Text: "\x1b[2Jcleared\x1b[1;1H"},
 	}, true)

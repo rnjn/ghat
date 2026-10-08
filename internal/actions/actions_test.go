@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/workflow"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/workflow"
 )
 
 type fakeAPI struct {

@@ -1,11 +1,13 @@
-# ghtui: a terminal UI for GitHub Actions
+# ghat: a terminal UI for GitHub Actions
+
+(Renamed from ghtui on 2026-10-08; earlier plans in docs/plans use the old name.)
 
 Date: 2026-10-07
 Status: approved design, awaiting implementation plan
 
 ## 1. Purpose
 
-`ghtui` is a single-binary terminal dashboard for GitHub Actions. It replaces
+`ghat` is a single-binary terminal dashboard for GitHub Actions. It replaces
 browser tabs and `gh run watch` for three day-to-day jobs:
 
 - **Watch my pushes.** See a run start, follow its log as steps complete, and
@@ -27,7 +29,7 @@ It also exposes a small set of pipe-friendly subcommands (`list`, `tail`,
 - GitHub has no streaming API for job logs, and (verified 2026-10-07) the
   job log only exists once the whole job completes: for a running job the
   logs endpoint redirects to a blob that 404s, even after several steps
-  finish. While a job runs, ghtui shows live step progress from the jobs
+  finish. While a job runs, ghat shows live step progress from the jobs
   endpoint; the log appears when the job completes. This is a hard
   platform limit and the design works within it rather than around it (no
   browser WebSocket scraping).
@@ -36,7 +38,7 @@ It also exposes a small set of pipe-friendly subcommands (`list`, `tail`,
 
 ### Success criteria
 
-- `ghtui tail <job>` prints the job's log within one poll interval of the
+- `ghat tail <job>` prints the job's log within one poll interval of the
   job finishing, and exits with the job's conclusion. While it waits, the
   TUI shows which step is running and for how long.
 - Opening the TUI shows every active run across the user's recent repos
@@ -71,10 +73,10 @@ Packages:
 | `internal/gh` | Thin typed REST client. Auth, ETags, rate-limit headers, pagination, 302 log redirect. No polling logic. |
 | `internal/store` | Repo → Run → Job → Step tree plus per-job log buffers. Concurrency-safe. Pure data, no I/O. |
 | `internal/poller` | Goroutines per resource type with adaptive intervals. Writes to store, emits change messages on a channel. |
-| `internal/tail` | Fetch job log, diff against emitted line count, parse `##[group]`, `##[error]`, timestamps. Used by both the poller and `ghtui tail`. |
+| `internal/tail` | Fetch job log, diff against emitted line count, parse `##[group]`, `##[error]`, timestamps. Used by both the poller and `ghat tail`. |
 | `internal/tui` | Bubble Tea models: board, runs, jobs, tail, help, confirm. Reads store only. |
 | `internal/config` | YAML config and on-disk cache. |
-| `cmd/ghtui` | Cobra root: TUI by default, subcommands otherwise. |
+| `cmd/ghat` | Cobra root: TUI by default, subcommands otherwise. |
 
 Rejected alternatives: UI-driven fetching (duplicated polling, no CLI
 reuse) and a local daemon with socket clients (two processes, overkill for
@@ -106,7 +108,7 @@ LogLine    { Timestamp, Text, Kind (plain|group|endgroup|error|warning|command),
 | Repo discovery | `GET /user/repos?sort=pushed&per_page=100` | 10 min and on startup | all pages until `pushed_at` older than window |
 | Runs per repo | `GET /repos/{o}/{r}/actions/runs?per_page=30` | 15 s if any run active, else 60 s | every discovered repo |
 | Jobs for a run | `GET /repos/{o}/{r}/actions/runs/{id}/jobs` | 5 s while in progress, once on completion | selected or watched runs only |
-| Job log | `GET /repos/{o}/{r}/actions/jobs/{id}/logs` | once the job is completed (retried while the blob lags) | job open in Tail view, or `ghtui tail` |
+| Job log | `GET /repos/{o}/{r}/actions/jobs/{id}/logs` | once the job is completed (retried while the blob lags) | job open in Tail view, or `ghat tail` |
 | Rate limit | headers on every response | n/a | global |
 
 Rules:
@@ -202,16 +204,16 @@ flashes its conclusion in the status bar for five seconds.
 
 Given any subcommand, no TUI starts.
 
-- `ghtui` — TUI on Board. `ghtui --here` — TUI on Runs for the repo inferred
+- `ghat` — TUI on Board. `ghat --here` — TUI on Runs for the repo inferred
   from the cwd's `origin` remote.
-- `ghtui list [owner/repo] [--branch B] [--status S] [--limit N] [--json]`
+- `ghat list [owner/repo] [--branch B] [--status S] [--limit N] [--json]`
   — runs as a table or JSON lines. Repo defaults to cwd remote.
-- `ghtui tail <run-id|job-id> [--repo owner/repo] [--no-follow]` — resolves
+- `ghat tail <run-id|job-id> [--repo owner/repo] [--no-follow]` — resolves
   a run ID to its first in-progress job (or the single job, or errors if
   ambiguous and asks for a job ID). Prints new log lines to stdout as steps
   complete until the job finishes. Exit 0 on `success`, 1 on any other
   conclusion, 2 on usage or API error.
-- `ghtui watch <run-id> [--repo owner/repo]` — prints one line per status
+- `ghat watch <run-id> [--repo owner/repo]` — prints one line per status
   or job transition, exits with the run's conclusion using the same codes.
 
 Timestamps are stripped by default; `--timestamps` keeps them. `--json`
@@ -223,7 +225,7 @@ Auth resolution order: `GH_TOKEN`, `GITHUB_TOKEN`, then `gh auth token`.
 Failure exits with one line pointing to `gh auth login`. The token lives in
 memory only.
 
-`~/.config/ghtui/config.yaml`, all keys optional:
+`~/.config/ghat/config.yaml`, all keys optional:
 
 ```yaml
 repos:
@@ -239,7 +241,7 @@ ui:
   show_timestamps: false
 ```
 
-`~/.cache/ghtui/` holds ETags and the last discovery result so restart is
+`~/.cache/ghat/` holds ETags and the last discovery result so restart is
 instant and cheap. Cache corruption is treated as cache miss.
 
 ## 9. Error handling
@@ -264,15 +266,15 @@ instant and cheap. Cache corruption is treated as cache miss.
 - `internal/poller`: fake clock; assert interval changes on active↔idle
   and on rate-limit drop; assert jobs are not polled for unselected runs.
 - `internal/tui`: `teatest` golden tests. Send messages, assert `View()`.
-- `cmd/ghtui`: end-to-end `tail` and `watch` exit codes against the fake
+- `cmd/ghat`: end-to-end `tail` and `watch` exit codes against the fake
   server.
 - Tooling: `make build`, `make test`, `make lint` (golangci-lint).
   Test-first per change.
 
 ## 11. Delivery slices
 
-1. **Client and CLI.** `internal/gh`, auth, config, `ghtui list`,
-   `ghtui tail`, `ghtui watch`. Proves the API model and the tail
+1. **Client and CLI.** `internal/gh`, auth, config, `ghat list`,
+   `ghat tail`, `ghat watch`. Proves the API model and the tail
    algorithm with no UI.
 2. **TUI read path.** Store, poller, Board → Runs → Jobs → Tail, watch
    flag, bell.

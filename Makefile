@@ -3,7 +3,7 @@
 GOLANGCI_LINT := bin/golangci-lint
 
 build:
-	go build -o bin/ghtui ./cmd/ghtui
+	go build -o bin/ghat ./cmd/ghat
 
 test:
 	go test -race ./...

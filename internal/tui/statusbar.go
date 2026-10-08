@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/rnjn/ghtui/internal/poller"
+	"github.com/rnjn/ghat/internal/poller"
 )
 
 // errorTTL is how long a poll error stays in the status bar.

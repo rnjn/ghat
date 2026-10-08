@@ -9,8 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rnjn/ghtui/internal/poller"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/poller"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 // Context is what screens may use: the store, poll refresh, and a clock.
@@ -228,7 +228,7 @@ func (m Model) View() tea.View {
 	bodyH := m.height - len(head) - 1
 	var body string
 	if m.authErr != nil {
-		body = fit([]string{"", "  GitHub rejected the token. Run `gh auth login`, then restart ghtui.", "", "  " + m.authErr.Error(), "", "  q quit"}, m.width, bodyH)
+		body = fit([]string{"", "  GitHub rejected the token. Run `gh auth login`, then restart ghat.", "", "  " + m.authErr.Error(), "", "  q quit"}, m.width, bodyH)
 	} else if m.help {
 		body = helpView(m.width, bodyH)
 	} else {

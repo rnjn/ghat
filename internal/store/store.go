@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 // RepoState is a repo plus what the poller knows about it.

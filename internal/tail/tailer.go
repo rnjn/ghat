@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 // Source is the subset of the GitHub client the tailer needs.

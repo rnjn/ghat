@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 // Kind classifies a log line by its workflow-command marker.

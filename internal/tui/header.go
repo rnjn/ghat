@@ -8,8 +8,8 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 // headed is implemented by screens that describe themselves in the header:
@@ -34,7 +34,7 @@ func (m Model) header() []string {
 	if q := m.status.quota(now); q != "" {
 		right = q + " · " + right
 	}
-	lines := []string{titleBar(" ghtui ▸ "+heading, right+" ", m.width)}
+	lines := []string{titleBar(" ghat ▸ "+heading, right+" ", m.width)}
 	if m.height < minRowsForStats {
 		return lines
 	}

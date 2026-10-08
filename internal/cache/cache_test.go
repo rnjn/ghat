@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 var now = time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
@@ -97,7 +97,7 @@ func TestSaveUnwritableKeepsOldFileAndNoTemp(t *testing.T) {
 }
 
 func TestSaveCreatesPrivateDirAndFile(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "nested", "ghtui")
+	dir := filepath.Join(t.TempDir(), "nested", "ghat")
 	if err := Save(dir, FromStore(seeded(), now)); err != nil {
 		t.Fatal(err)
 	}
@@ -110,12 +110,12 @@ func TestSaveCreatesPrivateDirAndFile(t *testing.T) {
 
 func TestDir(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", "/tmp/xdg")
-	if Dir() != "/tmp/xdg/ghtui" {
+	if Dir() != "/tmp/xdg/ghat" {
 		t.Fatalf("Dir = %s", Dir())
 	}
 	t.Setenv("XDG_CACHE_HOME", "")
 	home, _ := os.UserHomeDir()
-	if Dir() != filepath.Join(home, ".cache", "ghtui") {
+	if Dir() != filepath.Join(home, ".cache", "ghat") {
 		t.Fatalf("Dir = %s", Dir())
 	}
 }

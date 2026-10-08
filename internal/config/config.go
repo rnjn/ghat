@@ -1,4 +1,4 @@
-// Package config loads ~/.config/ghtui/config.yaml and infers repos from git.
+// Package config loads ~/.config/ghat/config.yaml and infers repos from git.
 package config
 
 import (
@@ -73,19 +73,30 @@ func Default() Config {
 	return c
 }
 
-// DefaultPath is $XDG_CONFIG_HOME/ghtui/config.yaml, else ~/.config/ghtui/config.yaml.
+// DefaultPath is $XDG_CONFIG_HOME/ghat/config.yaml, else ~/.config/ghat/config.yaml.
 func DefaultPath() string {
 	if x := os.Getenv("XDG_CONFIG_HOME"); x != "" {
-		return filepath.Join(x, "ghtui", "config.yaml")
+		return filepath.Join(x, "ghat", "config.yaml")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "ghtui", "config.yaml")
+	return filepath.Join(home, ".config", "ghat", "config.yaml")
 }
 
-// Load reads path over the defaults. A missing file yields the defaults.
+// legacyName is the tool's former name; its config is still read when the
+// new one does not exist.
+const legacyName = "ghtui"
+
+// Load reads path over the defaults. A missing file yields the defaults,
+// unless a config from before the rename sits next to it.
 func Load(path string) (Config, error) {
 	c := Default()
 	b, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		dir := filepath.Dir(path)
+		if filepath.Base(dir) == "ghat" {
+			b, err = os.ReadFile(filepath.Join(filepath.Dir(dir), legacyName, filepath.Base(path)))
+		}
+	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return c, nil
 	}

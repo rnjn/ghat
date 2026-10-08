@@ -9,9 +9,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/rnjn/ghtui/internal/cache"
-	"github.com/rnjn/ghtui/internal/config"
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/cache"
+	"github.com/rnjn/ghat/internal/config"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 // deps are the process-level effects commands use, injected for tests.

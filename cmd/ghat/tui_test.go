@@ -12,9 +12,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rnjn/ghtui/internal/cache"
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/cache"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 // slowAPI answers every request after a delay, so quitting happens while
@@ -53,7 +53,7 @@ func TestTUIQuitsPromptlyWithRequestsInFlight(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	case <-time.After(time.Second):
-		t.Fatal("ghtui did not exit within 1s of q")
+		t.Fatal("ghat did not exit within 1s of q")
 	}
 	_ = pw.Close()
 	srv.Close()

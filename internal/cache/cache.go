@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/store"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 // Version changes whenever the file format does; other versions are misses.
@@ -44,13 +44,13 @@ type runRec struct {
 	CreatedAt, UpdatedAt                                time.Time
 }
 
-// Dir is $XDG_CACHE_HOME/ghtui, else ~/.cache/ghtui.
+// Dir is $XDG_CACHE_HOME/ghat, else ~/.cache/ghat.
 func Dir() string {
 	if x := os.Getenv("XDG_CACHE_HOME"); x != "" {
-		return filepath.Join(x, "ghtui")
+		return filepath.Join(x, "ghat")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".cache", "ghtui")
+	return filepath.Join(home, ".cache", "ghat")
 }
 
 // FromStore captures the store's repos and runs.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rnjn/ghtui/internal/tail"
+	"github.com/rnjn/ghat/internal/tail"
 )
 
 func lines(texts ...string) []tail.LogLine {

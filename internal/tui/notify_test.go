@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rnjn/ghtui/internal/gh"
-	"github.com/rnjn/ghtui/internal/poller"
+	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/poller"
 )
 
 // run executes cmd and every command batched inside it, returning all msgs.

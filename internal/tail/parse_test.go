@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnjn/ghtui/internal/gh"
+	"github.com/rnjn/ghat/internal/gh"
 )
 
 func at(s string) time.Time {
