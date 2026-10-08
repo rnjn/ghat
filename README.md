@@ -142,7 +142,8 @@ ghat --here   # straight to the runs of the repo in the current directory
 | `esc` | back (or close a search or filter) |
 | `tab` `←` `→` | switch between jobs and steps; on the graph, `tab` switches graph / timeline and `←` `→` move between columns |
 | `v` | view the run as a graph or timeline (from Runs or Pipeline) |
-| `/` | search the log (literal, case-insensitive); on Runs, filter by branch or status |
+| `/` | search the log (literal, case-insensitive); on Runs, filter: each term matches the branch or status, `-term` hides, and `failed`, `active`, `done` name groups of states — `/main -skipped`, `/failed`, `/-done` |
+| `s` | on Runs, cycle a status preset: failed, active, queued, done, all |
 | `n` `N` | next / previous search hit |
 | `z` `Z` | fold or unfold the group under the cursor / unfold all |
 | `t` | toggle timestamps |

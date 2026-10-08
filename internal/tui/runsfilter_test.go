@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -85,5 +86,81 @@ func TestRunsFilterEsc(t *testing.T) {
 	m, _ = update(m, key("esc"))
 	if m.top().Title() != "Board" {
 		t.Fatal("esc without a filter did not go back")
+	}
+}
+
+// seedMoreRuns adds a timed-out and a skipped run to acme/api.
+func seedMoreRuns(ctx *Context) {
+	runs := ctx.Store.Runs("acme/api")
+	runs = append(runs,
+		gh.Run{ID: 9, RepoKey: "acme/api", Number: 38, WorkflowName: "CI", Branch: "main", Status: "completed", Conclusion: "timed_out", CreatedAt: ago(4 * time.Hour), UpdatedAt: ago(4 * time.Hour)},
+		gh.Run{ID: 8, RepoKey: "acme/api", Number: 37, WorkflowName: "CI", Branch: "main", Status: "completed", Conclusion: "skipped", CreatedAt: ago(5 * time.Hour), UpdatedAt: ago(5 * time.Hour)},
+	)
+	ctx.Store.SetRuns("acme/api", runs, "")
+}
+
+func visibleNumbers(s Screen, ctx *Context) string {
+	var out []string
+	for _, run := range s.(*runsScreen).visible(ctx) {
+		out = append(out, fmt.Sprintf("#%d", run.Number))
+	}
+	return strings.Join(out, " ")
+}
+
+func TestRunsFilterTermsAndNegation(t *testing.T) {
+	ctx, _ := testContext(seedStore())
+	seedMoreRuns(ctx)
+	for text, want := range map[string]string{
+		"main failure":      "#39",
+		"main -fail":        "#40 #38 #37",
+		"-skipped":          "#41 #40 #39 #38",
+		"-skipped -timed":   "#41 #40 #39",
+		"  main   -skipped ": "#40 #39 #38",
+		"-":                 "#41 #40 #39 #38 #37",
+	} {
+		if got := visibleNumbers(filterRuns(NewRuns("acme/api"), ctx, text), ctx); got != want {
+			t.Errorf("/%s: %s, want %s", text, got, want)
+		}
+	}
+}
+
+func TestRunsFilterAliases(t *testing.T) {
+	ctx, _ := testContext(seedStore())
+	seedMoreRuns(ctx)
+	for text, want := range map[string]string{
+		"failed":  "#39 #38",
+		"active":  "#41",
+		"queued":  "",
+		"done":    "#40 #39 #38 #37",
+		"-failed": "#41 #40 #37",
+		"-done":   "#41",
+	} {
+		if got := visibleNumbers(filterRuns(NewRuns("acme/api"), ctx, text), ctx); got != want {
+			t.Errorf("/%s: %s, want %s", text, got, want)
+		}
+	}
+}
+
+func TestRunsStatusCycle(t *testing.T) {
+	ctx, _ := testContext(seedStore())
+	seedMoreRuns(ctx)
+	s := filterRuns(NewRuns("acme/api"), ctx, "main")
+	s, _ = press(s, ctx, "enter")
+	for _, want := range []string{"failed", "active", "queued", "done", "", "failed"} {
+		s, _ = press(s, ctx, "s")
+		if got := s.(*runsScreen).filter; got != want {
+			t.Fatalf("after s: filter %q, want %q", got, want)
+		}
+		if want != "" && !strings.Contains(s.Title(), "/"+want) {
+			t.Fatalf("title %q", s.Title())
+		}
+	}
+	if got := visibleNumbers(s, ctx); got != "#39 #38" {
+		t.Fatalf("failed preset shows %s", got)
+	}
+	// Opening / shows the preset so it can be edited.
+	s, _ = press(s, ctx, "/")
+	if v := s.(*runsScreen).input.Value(); v != "failed" {
+		t.Fatalf("input %q", v)
 	}
 }

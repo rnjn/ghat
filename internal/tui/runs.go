@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rnjn/ghat/internal/gh"
+	"github.com/rnjn/ghat/internal/store"
 )
 
 // runsScreen lists one repo's runs, newest first.
@@ -43,7 +44,7 @@ func (r *runsScreen) HandleEsc() bool {
 	return false
 }
 
-// visible is the repo's runs that match the filter (branch or status).
+// visible is the repo's runs that match the filter.
 func (r *runsScreen) visible(ctx *Context) []gh.Run {
 	runs := ctx.Store.Runs(r.repoKey)
 	if r.filter == "" {
@@ -51,13 +52,57 @@ func (r *runsScreen) visible(ctx *Context) []gh.Run {
 	}
 	var out []gh.Run
 	for _, run := range runs {
-		if strings.Contains(strings.ToLower(run.Branch), r.filter) ||
-			strings.Contains(strings.ToLower(state(run.Status, run.Conclusion)), r.filter) ||
-			strings.Contains(strings.ToLower(run.Status), r.filter) {
+		if matchRun(run, r.filter) {
 			out = append(out, run)
 		}
 	}
 	return out
+}
+
+// statusAliases name groups of states a filter term can select.
+var statusAliases = map[string]func(gh.Run) bool{
+	"failed": func(r gh.Run) bool { return r.Status == "completed" && isFailure(r.Conclusion) },
+	"active": func(r gh.Run) bool { return store.IsActive(r.Status) },
+	"done":   func(r gh.Run) bool { return r.Status == "completed" },
+}
+
+// statusPresets is what s cycles through.
+var statusPresets = []string{"failed", "active", "queued", "done", ""}
+
+// matchRun reports whether run matches every space-separated term of
+// filter. A term is a status alias or a substring of the branch, status or
+// conclusion; a leading - negates it.
+func matchRun(run gh.Run, filter string) bool {
+	for _, term := range strings.Fields(filter) {
+		negate := strings.HasPrefix(term, "-")
+		term = strings.TrimPrefix(term, "-")
+		if term == "" {
+			continue
+		}
+		var hit bool
+		if alias, ok := statusAliases[term]; ok {
+			hit = alias(run)
+		} else {
+			hit = strings.Contains(strings.ToLower(run.Branch), term) ||
+				strings.Contains(strings.ToLower(state(run.Status, run.Conclusion)), term) ||
+				strings.Contains(strings.ToLower(run.Status), term)
+		}
+		if hit == negate {
+			return false
+		}
+	}
+	return true
+}
+
+// cycleStatus moves the filter to the next status preset.
+func (r *runsScreen) cycleStatus() {
+	next := 0
+	for i, p := range statusPresets {
+		if p == r.filter {
+			next = (i + 1) % len(statusPresets)
+		}
+	}
+	r.filter = statusPresets[next]
 }
 
 // filterKey handles keys while the filter line is open, and /.
@@ -71,6 +116,10 @@ func (r *runsScreen) filterKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 		r.input, cmd = r.input.Update(msg)
 		r.filter = strings.ToLower(strings.TrimSpace(r.input.Value()))
 		return true, cmd
+	}
+	if msg.String() == "s" {
+		r.cycleStatus()
+		return true, nil
 	}
 	if msg.String() == "/" {
 		r.filtering = true
