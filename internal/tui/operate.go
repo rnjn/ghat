@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -86,14 +87,30 @@ func runURL(ctx *Context, runID int64) string {
 	return ""
 }
 
-// commitKey opens the commit of run runID on c, or reports that it has none.
+// commitKey opens (c) or copies (C) the commit link of run runID.
 func commitKey(ctx *Context, k string, runID int64) tea.Cmd {
-	if k != "c" {
+	if k != "c" && k != "C" {
 		return nil
 	}
 	run, ok := ctx.Store.Run(runID)
 	if !ok || run.CommitURL() == "" {
 		return fail(errors.New("no commit for this run"))
 	}
-	return openURL(ctx, run.CommitURL())
+	return linkKey(ctx, k, run.CommitURL())
+}
+
+// linkKey opens url for a lowercase key (o, c) and copies it for the
+// uppercase one (O, C).
+func linkKey(ctx *Context, k, url string) tea.Cmd {
+	if k == strings.ToUpper(k) {
+		return copyURL(url)
+	}
+	return openURL(ctx, url)
+}
+
+// copyURL puts url on the clipboard of the terminal the user sits at (OSC
+// 52 works through SSH and, with set-clipboard on, tmux) and shows it, so
+// it can still be selected by hand where OSC 52 is not supported.
+func copyURL(url string) tea.Cmd {
+	return tea.Batch(tea.SetClipboard(url), func() tea.Msg { return ActionResult{Text: "copied " + url} })
 }

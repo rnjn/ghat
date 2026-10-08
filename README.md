@@ -107,11 +107,17 @@ ghat --here   # straight to the runs of the repo in the current directory
 | `r` | rerun: only failed jobs if any failed, else all (asks `y/N`) |
 | `x` | cancel the run (asks `y/N`) |
 | `d` | dispatch a workflow: pick one, fill the ref and inputs, confirm `y/N` |
-| `o` | open the current repo, run or job in the browser |
-| `c` | open the run's commit (its diff) in the browser |
+| `o` / `O` | open the current repo, run or job in the browser / copy its link |
+| `c` / `C` | open the run's commit (its diff) in the browser / copy its link |
 | `R` | refresh the current screen now |
 | `?` | help |
 | `q` | quit |
+
+Copying uses the terminal's clipboard escape (OSC 52), so the link lands
+on the machine you are sitting at, even over SSH. Most modern terminals
+support it; inside tmux add `set -g set-clipboard on`. The status bar also
+shows the copied link, so you can select it by hand where copying is
+unsupported.
 
 Actions are fire-and-forget: the status bar says "… requested" and the next
 poll shows what GitHub did.

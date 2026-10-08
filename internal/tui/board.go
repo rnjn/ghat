@@ -52,8 +52,8 @@ func (b *board) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if k.String() == "d" && len(repos) > 0 {
 		return b, dispatchKey(ctx, "d", repos[b.cur.pos].Repo.Key(), "", 0)
 	}
-	if k.String() == "o" && len(repos) > 0 {
-		return b, openURL(ctx, "https://github.com/"+repos[b.cur.pos].Repo.Key()+"/actions")
+	if (k.String() == "o" || k.String() == "O") && len(repos) > 0 {
+		return b, linkKey(ctx, k.String(), "https://github.com/"+repos[b.cur.pos].Repo.Key()+"/actions")
 	}
 	if k.String() == "enter" && len(repos) > 0 {
 		b.cur.clamp(len(repos))

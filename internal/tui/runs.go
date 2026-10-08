@@ -136,11 +136,11 @@ func (r *runsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return r, push(NewJobs(run))
 	case "w":
 		ctx.Store.ToggleWatch(run.ID)
-	case "o":
+	case "o", "O":
 		if run.HTMLURL == "" {
 			return r, fail(errors.New("no page for this run"))
 		}
-		return r, openURL(ctx, run.HTMLURL)
+		return r, linkKey(ctx, k.String(), run.HTMLURL)
 	}
 	return r, nil
 }

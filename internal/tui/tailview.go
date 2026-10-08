@@ -72,7 +72,7 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if cmd := commitKey(ctx, m.String(), t.job.RunID); cmd != nil {
 			return t, cmd
 		}
-		if m.String() == "o" {
+		if m.String() == "o" || m.String() == "O" {
 			url := t.job.HTMLURL
 			if url == "" {
 				url = runURL(ctx, t.job.RunID)
@@ -80,7 +80,7 @@ func (t *tailScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if url == "" {
 				return t, fail(errors.New("no page for this job"))
 			}
-			return t, openURL(ctx, url)
+			return t, linkKey(ctx, m.String(), url)
 		}
 		t.key(m.String(), ctx.Store.Log(t.job.ID).Lines)
 	}
