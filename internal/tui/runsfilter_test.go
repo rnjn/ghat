@@ -111,12 +111,12 @@ func TestRunsFilterTermsAndNegation(t *testing.T) {
 	ctx, _ := testContext(seedStore())
 	seedMoreRuns(ctx)
 	for text, want := range map[string]string{
-		"main failure":      "#39",
-		"main -fail":        "#40 #38 #37",
-		"-skipped":          "#41 #40 #39 #38",
-		"-skipped -timed":   "#41 #40 #39",
+		"main failure":       "#39",
+		"main -fail":         "#40 #38 #37",
+		"-skipped":           "#41 #40 #39 #38",
+		"-skipped -timed":    "#41 #40 #39",
 		"  main   -skipped ": "#40 #39 #38",
-		"-":                 "#41 #40 #39 #38 #37",
+		"-":                  "#41 #40 #39 #38 #37",
 	} {
 		if got := visibleNumbers(filterRuns(NewRuns("acme/api"), ctx, text), ctx); got != want {
 			t.Errorf("/%s: %s, want %s", text, got, want)
