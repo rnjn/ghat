@@ -54,3 +54,13 @@ jobs:
             exit 1
           fi
           echo "done"
+
+  report:
+    needs: [fast, slow]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarise
+        run: |
+          echo "fast: ${{ needs.fast.result }}"
+          echo "slow: ${{ needs.slow.result }}"

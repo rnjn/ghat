@@ -18,3 +18,15 @@ func TestRepoWorkflowsAreDispatchable(t *testing.T) {
 		}
 	}
 }
+
+// The dogfood workflow has a fan-in so the graph view has edges to draw.
+func TestDogfoodHasReportStage(t *testing.T) {
+	b, err := os.ReadFile("../../.github/workflows/dogfood.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobs, err := ParseJobs(b)
+	if err != nil || len(jobs) != 3 || jobs[2].Key != "report" || len(jobs[2].Needs) != 2 {
+		t.Fatalf("jobs %+v err %v", jobs, err)
+	}
+}
