@@ -48,6 +48,46 @@
  polled 0s ago
 ```
 
+`v` on a run draws it as a graph or, with `tab`, as a timeline:
+
+```text
+ ghat ▸ Graph · rnjn/ghat #4 Dogfood                                                      13:37
+ ✓ success · main · workflow_dispatch · rnjn · 1m44s
+ 3 jobs · 2 columns · critical path slow › report (1m43s)
+────────────────────────────────────────────────────────────────────────────────────────────────
+
+ ┌──────────────┐     ┌─────────────┐
+ │ ✓ slow 1m34s │───┬▶│ ✓ report 3s │
+ └──────────────┘   │ └─────────────┘
+                    │
+ ┌──────────────┐   │
+ │ ✓ fast    3s │───╯
+ └──────────────┘
+
+ tab: timeline · ←/→ columns · enter: log
+ polled 0s ago
+```
+
+```text
+ ghat ▸ Timeline · rnjn/ghat #4 Dogfood                                                   13:37
+ ✓ success · main · workflow_dispatch · rnjn · 1m44s
+ 3 jobs · 2 columns · critical path slow › report (1m43s)
+────────────────────────────────────────────────────────────────────────────────────────────────
+                   0                  30s                1m                 1m30s
+                   ┬──────────────────┬──────────────────┬──────────────────┬─────────
+  ✓ slow           ░░█████████████████████████████████████████████████████████████     1m34s
+  ✓ fast           ░░██                                                                3s
+› ✓ report                                                                        ░██  3s
+    ✓ Set up job                                                                    █  0s
+    ✓ Summarise                                                                     █  0s
+    ✓ Complete job                                                                  █  0s
+
+ tab: graph · enter: log
+ polled 0s ago
+```
+
+`░` is the wait before a job started, `█` its run time; the selected job's steps appear beneath it.
+
 ## Features
 
 - **One board for every repo you work on.** Repos you pushed to in the last 14 days, plus pinned ones, with each repo's latest run, running and failed counts.
